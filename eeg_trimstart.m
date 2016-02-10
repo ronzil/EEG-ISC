@@ -2,7 +2,12 @@
 function res = eeg_trimstart(EEGdata, dtObj)
 
 	skip = eeg_timetosample(EEGdata, dtObj);
-	assert(skip > 0, 'Currently no support for negative adjusment');
+	assert(skip >= 0, 'Currently no support for negative adjusment');
+	if (skip == 0) 
+		res = EEGdata;
+		return
+	end
+	
 	disp(sprintf('eeg_trimstart: trimming %d samples.', skip));
 	
 	% trim begining of data
