@@ -37,12 +37,11 @@
 function EVENT = parsebvmrk(MRK)
 
 for idx = 1:length(MRK.markerinfos)
-    [mrkType mrkDesc EVENT(idx).latency EVENT(idx).duration  EVENT(idx).channel EVENT(idx).bvtime] = ...
+    [mrkType mrkDesc EVENT(idx).latency EVENT(idx).duration  EVENT(idx).channel bvtime] = ...
         strread(MRK.markerinfos{idx}, '%s%s%f%d%d%s', 'delimiter', ',');
 		
-	if class(EVENT(idx).bvtime) == 'cell'
-		EVENT(idx).bvtime = EVENT(idx).bvtime{1};
-	end
+	EVENT(idx).bvtime = char(bvtime);
+
 
     if strcmpi(mrkType, 'New Segment') || strcmpi(mrkType, 'DC Correction')
         EVENT(idx).type = 'boundary';
