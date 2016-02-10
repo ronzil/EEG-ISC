@@ -1,7 +1,0 @@
-function allData = pop_loadbvdir(path)
-
-	files = dir(path + '*.vhdr');
-	for file = files'
-		file
-		% Do some stuff
-	end

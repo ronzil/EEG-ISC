@@ -1,0 +1,32 @@
+eeg analysis
+------------
+
+
+Initilize
+----------
+download eeglab. open somewhere and add MATLAB path to it.
+download BrainVsion plugin and add it to eeglab/plugins
+
+cd <analysis-dir>
+(* bug in parsebvmrk.m so I made my own version in <analysis-dir> directory. Local dir takes precedence so scripts will work fine.)
+- i dont like this... perhaps make all my files it's own plugin based on BVs. (must not be installed together)
+
+
+
+
+
+
+
+
+
+KB
+--
+Load one file:
+   EEG = pop_loadbv('C:\bigdata\debates\rep\', 'GOPDebate_Ivonne_0001.vhdr');
+
+
+
+
+
+
+
