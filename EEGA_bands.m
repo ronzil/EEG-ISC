@@ -18,8 +18,11 @@ function EEGA_bands(alldata)
 
 	% iterate all data in 20 minute segments
 	segment_length = 20*60*srate; 
-	for start = 1:segment_length:datalength-segment_length
-		internal_segment_length = segment_length + 1*60*srate; %spectorgrams and correlations require a window of data. So to calculate the last second, we need extra data.
+    startfrom = 1;
+	for start = startfrom:segment_length:datalength-segment_length
+        %spectorgrams and correlations require a window of data from the
+        %moment we are trying to calculate. Therefore we need extra data to calculate the last second.
+        internal_segment_length = segment_length + 1*60*srate; 
 		
 		%trim EEG to 20 minutes each time	
 		alldatatrim = do_trim(alldata, start, start+internal_segment_length-1);
