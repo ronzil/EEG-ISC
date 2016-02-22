@@ -236,8 +236,10 @@ function allBandsCorrMulti = calc_rand_correlations(spectogramsBandsPerPerson)
 	% all start at begining
 	startingTimePerPerson = randi(datalength-calclength, 1,peoplenum);
 
+	% calculate how many random runs we need to match the ammount of real data we have
+	randnum = round(datalength/(calclength-window));
 	allBandsCorrMulti=[];
-	for i=1:10
+	for i=1:randnum
 		allBandsCorr = do_calc_correlations(spectogramsBandsPerPerson, startingTimePerPerson, calclength, window);
 		allBandsCorrMulti(:,:,i) = allBandsCorr;
 	end
@@ -379,11 +381,14 @@ function segBand = calc_significance(realbandcorr, randbandcorrMulti)
 		randm = mean(randdata);
 		rands = std(randdata);
 		
-		realcount = sum(realbandcorr(bandi,:) > randm + rands*significance);
-		randcount = sum(randdata > randm + rands*significance);
+		limit = randm + rands*significance;
+		
+		realcount = sum(realbandcorr(bandi,:) > limit);
+		randcount = sum(randdata > limit);
         
 		segBand(1,bandi) = realcount/length(realbandcorr);
 		segBand(2,bandi) = randcount/length(randdata);
+		segBand(3,bandi) = limit;
 		
 	end
 
