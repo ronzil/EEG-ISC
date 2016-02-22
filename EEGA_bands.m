@@ -39,7 +39,7 @@ function EEGA_bands(alldata)
 		%find number of components by taking the minimum of all people. (sometimes its less than the channel number)
 		numComponents = 1000;
 		for i = 1:length(alldatatrim)
-			numComponents = min(numComponents, length(alldatatrim{i}.icaweights));
+			numComponents = min(numComponents, size(componentsPerPerson{i},1));
 		end
 		numComponents
 		
@@ -194,12 +194,12 @@ function spectogramsBandsPerPerson = make_bands(spectogramsPerPerson, numCompone
 
 			% make 4Hz band			
 			bandsize = 4;
-			for i=1:bandsize:size(data,1)-bandsize
+			for i=1:bandsize:size(data,1)-bandsize+1
 				bandsdata = [bandsdata ; mean(data(i:i+bandsize-1, :))]; % average the frequencies from i to i+bandsdata
 			end	
 			% make 10Hz band			
 			bandsize = 10;
-			for i=1:bandsize:size(data,1)-bandsize
+			for i=1:bandsize:size(data,1)-bandsize+1
 				bandsdata = [bandsdata ; mean(data(i:i+bandsize-1, :))];
 			end	
 			
