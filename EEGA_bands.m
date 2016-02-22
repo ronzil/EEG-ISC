@@ -52,13 +52,13 @@ function EEGA_bands(alldata)
 		spectogramsBandsPerPerson =  cachefun(@() make_bands(spectogramsPerPerson, numComponents), fname);
 		
 		fname = sprintf('step6_CorrSpectoTimeBands_%d_%d', start, internal_segment_length);								
-		bandcorr = cachefun(@() calc_correlations(spectogramsBandsPerPerson), fname);
+		realbandcorr = cachefun(@() calc_correlations(spectogramsBandsPerPerson), fname);
 
-		for i= 1:10
-			fname = sprintf('step7_RandCorrSpectoTimeBands_%d_%d_%d', i, start, internal_segment_length);								
-			result = calc_rand_correlations(spectogramsBandsPerPerson);
-			save(fname, 'result');
-		end
+		fname = sprintf('step7_RandCorrSpectoTimeBands_%d_%d', start, internal_segment_length);								
+		randbandcorrMulti = cachefun(@() calc_rand_correlations(spectogramsBandsPerPerson), fname);
+
+		fname = sprintf('step8_SignificanceVec_%d_%d', start, internal_segment_length);								        
+		segBand = cachefun(@() calc_significance(realbandcorr, randbandcorrMulti), fname);
 		
 	end	
 		
@@ -226,7 +226,7 @@ function allBandsCorr = calc_correlations(spectogramsBandsPerPerson)
 	allBandsCorr = do_calc_correlations(spectogramsBandsPerPerson, startingTimePerPerson, calclength, window);
 end
 
-function allBandsCorr = calc_rand_correlations(spectogramsBandsPerPerson)
+function allBandsCorrMulti = calc_rand_correlations(spectogramsBandsPerPerson)
 	peoplenum = length(spectogramsBandsPerPerson);
 	datalength = size(spectogramsBandsPerPerson{1}{1},2);
 
@@ -236,8 +236,13 @@ function allBandsCorr = calc_rand_correlations(spectogramsBandsPerPerson)
 	% all start at begining
 	startingTimePerPerson = randi(datalength-calclength, 1,peoplenum);
 
-
-	allBandsCorr = do_calc_correlations(spectogramsBandsPerPerson, startingTimePerPerson, calclength, window);
+	allBandsCorrMulti=[];
+	for i=1:10
+		allBandsCorr = do_calc_correlations(spectogramsBandsPerPerson, startingTimePerPerson, calclength, window);
+		allBandsCorrMulti(:,:,i) = allBandsCorr;
+	end
+	
+		
 end
 
 
@@ -350,6 +355,39 @@ function allBandsCorr = slow_calc_correlations(spectogramsBandsPerPerson, starti
 
 		
 	
+
+end
+
+
+
+function segBand = calc_significance(realbandcorr, randbandcorrMulti)
+	%realbandcorr is a matrix of bands,time
+	%randbandcorrMulti is matrix of bands,time,interations
+	
+	significance = 2; % standard devs
+	
+	bandsnum = size(realbandcorr,1);
+
+	segBand = [];
+	% go over bands
+	% calc the corr for the entire time per band
+	allBandsCorr = [];
+	for bandi = 1:bandsnum
+		%calc 
+		randdata = randbandcorrMulti(bandi, :, :);
+		randdata = randdata(:);
+		randm = mean(randdata);
+		rands = std(randdata);
+		
+		realcount = sum(realbandcorr(bandi,:) > randm + rands*significance);
+		randcount = sum(randdata > randm + rands*significance);
+        
+		segBand(1,bandi) = realcount/length(realbandcorr);
+		segBand(2,bandi) = randcount/length(randdata);
+		
+	end
+
+
 
 end
 
