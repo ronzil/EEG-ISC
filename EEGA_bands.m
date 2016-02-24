@@ -16,10 +16,15 @@ function EEGA_bands(alldata)
 	%step1 filter <1Hz and > 50Hz and subtract reference from #17
 	alldata = cachefun(@() do_filter(alldata), 'step1_dofilter');
 
+    CorrSpectoTimeBands = [];
+    
 	% iterate all data in 20 minute segments
-	segment_length = 20*60*srate; 
+	set_segment_length = 20*60*srate; 
     startfrom = 1;
-	for start = startfrom:segment_length:datalength-segment_length
+	for start = startfrom:set_segment_length:datalength
+	
+		segment_length = min(set_segment_length, datalength-start+1-1*60*srate-1);
+	
         %spectorgrams and correlations require a window of data from the
         %moment we are trying to calculate. Therefore we need extra data to calculate the last second.
         internal_segment_length = segment_length + 1*60*srate; 
@@ -52,17 +57,25 @@ function EEGA_bands(alldata)
 		spectogramsBandsPerPerson =  cachefun(@() make_bands(spectogramsPerPerson, numComponents), fname);
 		
 		fname = sprintf('step6_CorrSpectoTimeBands_%d_%d', start, internal_segment_length);								
-		realbandcorr = cachefun(@() calc_correlations(spectogramsBandsPerPerson), fname);
+		realbandcorr = cachefun(@() calc_correlations(spectogramsBandsPerPerson, segment_length/srate), fname);
+        
+        % accumilate all correlations.
+        CorrSpectoTimeBands = [CorrSpectoTimeBands, realbandcorr];
 
 		fname = sprintf('step7_RandCorrSpectoTimeBands_%d_%d', start, internal_segment_length);								
-		randbandcorrMulti = cachefun(@() calc_rand_correlations(spectogramsBandsPerPerson), fname);
+		randbandcorrMulti = cachefun(@() calc_rand_correlations(spectogramsBandsPerPerson, segment_length/srate), fname);
 
 		fname = sprintf('step8_SignificanceVec_%d_%d', start, internal_segment_length);								        
 		segBand = cachefun(@() calc_significance(realbandcorr, randbandcorrMulti), fname);
 		
-	end	
+    end	
 		
+    % save correltion for entire time span.
+    % name result for consistancy 
+    result = CorrSpectoTimeBands;
+    save('step6_CorrSpectoTimeBands', 'result');
 
+    
 		
 		
 	
@@ -210,34 +223,34 @@ function spectogramsBandsPerPerson = make_bands(spectogramsPerPerson, numCompone
 end
 
 
-function allBandsCorr = calc_correlations(spectogramsBandsPerPerson)
+function allBandsCorr = calc_correlations(spectogramsBandsPerPerson, segment_length)
 	%spectogramsBandsPerPerson{i}{compind}[second, band]
 	peoplenum = length(spectogramsBandsPerPerson);
 	datalength = size(spectogramsBandsPerPerson{1}{1},2);
-
+    
     window = 30; % in seconds	
-	calclength = datalength;
-	
+    assert (segment_length + window <= datalength);
+    
+	calclength = segment_length;
+
 	% all start at begining
 	startingTimePerPerson = ones(1,peoplenum);
-
-
 
 	allBandsCorr = do_calc_correlations(spectogramsBandsPerPerson, startingTimePerPerson, calclength, window);
 end
 
-function allBandsCorrMulti = calc_rand_correlations(spectogramsBandsPerPerson)
+function allBandsCorrMulti = calc_rand_correlations(spectogramsBandsPerPerson, segment_length)
 	peoplenum = length(spectogramsBandsPerPerson);
 	datalength = size(spectogramsBandsPerPerson{1}{1},2);
 
     window = 30; % in seconds	
-	calclength = 100 + window;
+	calclength = 100;
 	
 	% all start at begining
-	startingTimePerPerson = randi(datalength-calclength, 1,peoplenum);
+	startingTimePerPerson = randi(round(segment_length-calclength), 1,peoplenum);
 
 	% calculate how many random runs we need to match the ammount of real data we have
-	randnum = round(datalength/(calclength-window));
+	randnum = round(segment_length/calclength);
 	allBandsCorrMulti=[];
 	for i=1:randnum
 		allBandsCorr = do_calc_correlations(spectogramsBandsPerPerson, startingTimePerPerson, calclength, window);
@@ -262,7 +275,7 @@ function allBandsCorr = do_calc_correlations(spectogramsBandsPerPerson, starting
 		% go over time looking at a window
 		% calc the corr
 		corrtimevec = [];
-		for windowstart=1:datalength-window
+		for windowstart=1:datalength
 %			disp(sprintf('band %d windowstart %d', bandi, windowstart));
 			
 			% build component matrix
