@@ -145,6 +145,7 @@ function componentsPerPerson = get_components(alldata)
 		for i = 1:length(alldata)
 		    EEG = alldata{i};
 			componentsPerPerson{i} = eeg_getdatact(EEG, 'component', [1:size(EEG.icaweights,1)]);
+%			componentsPerPerson{i} = EEG.data(1:16,:);
 		end
 end		
 		
