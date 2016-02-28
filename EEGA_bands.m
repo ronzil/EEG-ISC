@@ -1,7 +1,20 @@
 %%% EEG analysis
 
-function EEGA_bands(alldata) 
+function EEGA_bands(dirname, alldata) 
 
+	% this is the cache directory. Set here for cachefun
+    global cache_dir__;
+    cache_dir__ = dirname;
+	
+	% We allow calling with only the dirname if the cache is already populated.
+	% so we allow null alldata for the first cachefun call to go through
+	if (~exists('alldata','var'))
+		alldata = ''
+	end
+
+	%step1 filter <1Hz and > 50Hz and subtract reference from #17
+	alldata = cachefun(@() do_filter(alldata), 'step1_dofilter');
+    
 	%set data length as minimial length of EEG data from all people
 	datalength = 10000000000;
 	for i = 1:length(alldata)
@@ -13,10 +26,8 @@ function EEGA_bands(alldata)
 	srate = alldata{1}.srate;
 	
 
-	%step1 filter <1Hz and > 50Hz and subtract reference from #17
-	alldata = cachefun(@() do_filter(alldata), 'step1_dofilter');
-
     CorrSpectoTimeBands = [];
+	corrSig = [];
     
 	% iterate all data in 20 minute segments
 	set_segment_length = 20*60*srate; 
@@ -53,20 +64,30 @@ function EEGA_bands(alldata)
 		fname = sprintf('step4_spectograms_%d_%d', start, internal_segment_length);				
 		spectogramsPerPerson = cachefun(@() get_spectograms(componentsPerPerson, numComponents), fname);
 
+		% make average bands of specific sizes from the spectograms.
 		fname = sprintf('step5_spectogramBands_%d_%d', start, internal_segment_length);						
 		spectogramsBandsPerPerson =  cachefun(@() make_bands(spectogramsPerPerson, numComponents), fname);
-		
+
+		% add a band which is just a sliding windo average of the component data.
+		fname = sprintf('step5a_averageWindow_%d_%d', start, internal_segment_length);						
+		spectogramsBandsPerPerson =  cachefun(@() addAverageWindow(spectogramsBandsPerPerson, componentsPerPerson, numComponents), fname);
+
+		% calcluate the correlation of each band 	
 		fname = sprintf('step6_CorrSpectoTimeBands_%d_%d', start, internal_segment_length);								
 		realbandcorr = cachefun(@() calc_correlations(spectogramsBandsPerPerson, segment_length/srate), fname);
         
         % accumilate all correlations.
         CorrSpectoTimeBands = [CorrSpectoTimeBands, realbandcorr];
 
+		% calculate the random correlation of each band
 		fname = sprintf('step7_RandCorrSpectoTimeBands_%d_%d', start, internal_segment_length);								
 		randbandcorrMulti = cachefun(@() calc_rand_correlations(spectogramsBandsPerPerson, segment_length/srate), fname);
 
+		% calculate the significance for each band
 		fname = sprintf('step8_SignificanceVec_%d_%d', start, internal_segment_length);								        
 		segBand = cachefun(@() calc_significance(realbandcorr, randbandcorrMulti), fname);
+		
+		corrSig = [corrSig; segBand(1,:)];
 		
     end	
 		
@@ -74,6 +95,10 @@ function EEGA_bands(alldata)
     % name result for consistancy 
     result = CorrSpectoTimeBands;
     save('step6_CorrSpectoTimeBands', 'result');
+	
+	result = corrSig;
+    save('step8_SignificanceVec', 'result');
+	
 
     
 		
@@ -98,6 +123,7 @@ function alldata = do_filter(alldata)
 		EEG = pop_chanedit(EEG, 'load',{'locations.loc' 'filetype' 'autodetect'},'setref',{'17' 'Ref'});
 		EEG = eeg_checkset( EEG );
 		EEG = pop_eegfiltnew(EEG, [], 1, 826, true, [], 0); %%filter data 1
+%		EEG = pop_eegfiltnew(EEG, [], 20, 166, true, [], 1);		%%filter below 20
 		EEG = eeg_checkset( EEG );
 		EEG = pop_eegfiltnew(EEG, [], 50, 66, 0, [], 0);%% filter data above 50
 		EEG = eeg_checkset( EEG );
@@ -149,6 +175,41 @@ function componentsPerPerson = get_components(alldata)
 		end
 end		
 		
+
+function spectogramsBandsPerPerson = addAverageWindow(spectogramsBandsPerPerson, componentsPerPerson, numComponents)
+	data_length = length(componentsPerPerson{1}); %in sample. note add assert that all components are same length
+    window = 5; % 5 seconds
+    frequencies = 60;
+	srate = 250; % note make nicer
+	window_in_samples = window*srate;
+	
+	
+	avgWindowPerPerson = {};
+	for i = 1:length(componentsPerPerson) % going over people
+		personspec = {};
+		
+		for compind = 1:numComponents % going over components
+			compspec = [];
+			
+			% go over the data in <window> size. and calculate the FFT			
+			for step=1:srate:data_length-window_in_samples
+				data = componentsPerPerson{i}(compind, step:step+window_in_samples-1);
+
+				% accumilate the window. each point is one second
+				compspec = [compspec , mean(data)];
+		
+			end
+			
+%			personspec{compind} = compspec;
+            spectogramsBandsPerPerson{i}{compind} = [spectogramsBandsPerPerson{i}{compind} ; compspec];
+			
+		end
+		
+	end	
+
+
+
+end
 
 function spectogramsPerPerson = get_spectograms(componentsPerPerson, numcomponents)
 	%spectogramsPerPerson is a cell array per person. Each cell is: Cell array of components. Each cell is: bands X data (in seconds)
@@ -415,7 +476,11 @@ end
 
 
 function result = cachefun(func, name)
-	
+	global cache_dir__;
+	if (~exist(cache_dir__, 'dir'))
+        mkdir(cache_dir__);
+    end    
+        
 %	if (exist('__cache', 'var')==0)
 %		global __cache;
 %		__cache = struct;
@@ -424,7 +489,7 @@ function result = cachefun(func, name)
 %	if (isfield(__cache, name))
 %		result = getfield(__cache, name);
 %	else
-		fname = strcat(name, '.mat');
+		fname = strcat(cache_dir__, filesep,  name, '.mat');
 		if (exist(fname, 'file'))
 			clear result;
 			disp(sprintf('Loading %s...', fname));
