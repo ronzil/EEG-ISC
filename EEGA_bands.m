@@ -8,15 +8,15 @@ function EEGA_bands(dirname, alldata)
 	
 	% We allow calling with only the dirname if the cache is already populated.
 	% so we allow null alldata for the first cachefun call to go through
-	if (~exists('alldata','var'))
-		alldata = ''
+	if (~exist('alldata','var'))
+		alldata = '';
 	end
 
 	%step1 filter <1Hz and > 50Hz and subtract reference from #17
 	alldata = cachefun(@() do_filter(alldata), 'step1_dofilter');
     
 	%set data length as minimial length of EEG data from all people
-	datalength = 10000000000;
+	datalength = intmax;
 	for i = 1:length(alldata)
 		EEG = alldata{i};
 		datalength = min(datalength, EEG.pnts);
@@ -53,7 +53,7 @@ function EEGA_bands(dirname, alldata)
 		componentsPerPerson = cachefun(@() get_components(alldatatrim), fname);
 		
 		%find number of components by taking the minimum of all people. (sometimes its less than the channel number)
-		numComponents = 1000;
+		numComponents = intmax;
 		for i = 1:length(alldatatrim)
 			numComponents = min(numComponents, size(componentsPerPerson{i},1));
 		end
@@ -69,8 +69,8 @@ function EEGA_bands(dirname, alldata)
 		spectogramsBandsPerPerson =  cachefun(@() make_bands(spectogramsPerPerson, numComponents), fname);
 
 		% add a band which is just a sliding windo average of the component data.
-		fname = sprintf('step5a_averageWindow_%d_%d', start, internal_segment_length);						
-		spectogramsBandsPerPerson =  cachefun(@() addAverageWindow(spectogramsBandsPerPerson, componentsPerPerson, numComponents), fname);
+%		fname = sprintf('step5a_averageWindow_%d_%d', start, internal_segment_length);						
+%		spectogramsBandsPerPerson =  cachefun(@() addAverageWindow(spectogramsBandsPerPerson, componentsPerPerson, numComponents), fname);
 
 		% calcluate the correlation of each band 	
 		fname = sprintf('step6_CorrSpectoTimeBands_%d_%d', start, internal_segment_length);								
@@ -508,12 +508,6 @@ function result = cachefun(func, name)
 %	end	
 	
 end
-
-function res = dome()
-	disp('dome');
-	res = 2;
-end
-
 
 
 	
