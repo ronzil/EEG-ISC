@@ -1,19 +1,20 @@
 % organize POI data
 
-%%% get EEG data
-eeg_time = eeg_starttime(alldata_rep{1}); % note
-eeg_time_unix = seconds(eeg_time-datetime(1970,1,1,0,0,0)+hours(6))*1000;
-load('cleanrun3\step6_CorrSpectoTimeBands');
-%load('step6_CorrSpectoTimeBands_1_315000');
-eeg_data = result;
-%eeg_values = mean(result);
+%%% ASSUMPTIONS
+%eeg_time = eeg_starttime(alldata_rep{1}); % note
+%eeg_time_unix = seconds(eeg_time-datetime(1970,1,1,0,0,0)+hours(6))*1000;
+%eeg_data ->  load('cleanrun3\step6_CorrSpectoTimeBands');
 
+% segtable 
+%segtable.Properties.VariableNames = {'startTS', 'duration', 'name'};
+% segtable.duration  %in miliseconds
 
-% process debate csv
-segtable = readtable('slider-data\debate1-speaker-data.csv');
-assert (length(segtable.Properties.VariableNames)==3);
-segtable.Properties.VariableNames = {'startTS', 'duration', 'name'};
-segtable.duration = segtable.duration*1000; %convert to miliseconds
+%slider_running = readtable('slider-data\debates1-slider-clean.csv');
+
+%sliderpower_td_all = sliderpower('slider-data\debate1-events_data.csv', 1000);
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 
 % save only segtable minimum of minlength
 minlength = 15000;
@@ -34,7 +35,7 @@ seggroups = {};
 names = unique(segtable.name);
 for i=1:length(names)
 	name = names{i};
-	data = table2array(segtable(find(strcmp(segtable.name,names(i))), 1:2));
+	data = table2array(segtable(find(strcmp(segtable.name,names(i))), 1:2)); % NOTE FIX THIS
 	seggroups{i} = struct('name', name, 'data', data);
 end	
 	
@@ -47,25 +48,19 @@ end
 %   .step - time step between samples in miliseconds. (1/srate)
 
 % prepare slider timedata
-slider_running = readtable('slider-data\debates1-slider-clean.csv');
 startTS = slider_running(1,:).Timestamp;
 step = (slider_running(2,:).Timestamp - slider_running(1,:).Timestamp);
 data = mean(table2array(slider_running(:, 3:end))');
-
 slider_td_all = struct('startTS',startTS, 'step', step, 'data', data);
 
 slider_td_all_smooth = slider_td_all;
-
 data = tsmovavg(slider_td_all_smooth.data,'s',30);
 slider_td_all_smooth.data = data(30:end);
 
 
-
 %% prepare slider power timedata
-sliderpower_td_all = sliderpower('slider-data\debate1-events_data.csv', 1000);
-
+sliderpower_td_all = sliderpower(slider_events_fn, 1000);
 sliderpower_td_all_smooth = sliderpower_td_all;
-
 sliderpower_td_all_smooth.data = tsmovavg(sliderpower_td_all_smooth.data,'s',30);
 sliderpower_td_all_smooth.data = sliderpower_td_all_smooth.data(30:end);
 
