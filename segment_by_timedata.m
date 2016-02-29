@@ -15,7 +15,7 @@
 %
 % second parameter can also be just one segment struct, or just the segment
 % data.
-function [res, segnificance] = segment_by_timedata(timedata, segments, randnum)
+function [res, significance, meanr, stdr] = segment_by_timedata(timedata, segments, randnum)
     if (strcmp(class(segments), 'cell'))
         segments = segments;
     elseif (strcmp(class(segments), 'struct'))
@@ -25,15 +25,17 @@ function [res, segnificance] = segment_by_timedata(timedata, segments, randnum)
     end
     
     for i=1:length(segments)
-        [v,s] = do_segment_by_timedata_with_random(timedata, segments{i}.data, randnum);
+        [v,s,mr,sr] = do_segment_by_timedata_with_random(timedata, segments{i}.data, randnum);
         res(i) = v;
-        segnificance(i) = s;
+        significance(i) = s;
+        meanr(i) = mr;
+        stdr(i) = sr;
     end
 
 end
 
 
-function [res, segnificance] = do_segment_by_timedata_with_random(timedata, segment_data, randnum)
+function [res, significance, meanr, stdr] = do_segment_by_timedata_with_random(timedata, segment_data, randnum)
     % get the random segments
     % get the total time value of all the 
     durs = segment_data(:,2);
@@ -51,13 +53,13 @@ function [res, segnificance] = do_segment_by_timedata_with_random(timedata, segm
         val(i)= mean(vec);
     end
     
-    mr = mean(val);
-    sr = std(val);
+    meanr = mean(val);
+    stdr = std(val);
     
     vec = vector_from_timedata_by_segments(timedata, segment_data);
     res = mean(vec);
     
-    segnificance = (res-mr)/sr;
+    significance = (res-meanr)/stdr;
 
 end
 
