@@ -6,8 +6,8 @@ function vector = vector_from_timedata_by_segments(timedata, seggroup_data)
     endoffset = round(startoffset + seggroup_data(:,2)/step - 1);
     
     % note. fix this by getting the last chunk of the EEG data
-    startoffset = max(startoffset, 1);
-    endoffset = min(endoffset, length(timedata.data));
+%    startoffset = max(startoffset, 1);
+%    endoffset = min(endoffset, length(timedata.data));
     if (min(startoffset)<=0)
 		disp('3');
     end
