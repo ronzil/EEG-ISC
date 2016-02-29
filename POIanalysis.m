@@ -86,6 +86,16 @@ end
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% create random seggroups for each person
+% a random seggroup is a seggroup with the same segment durations, but random starting points
+randsize = 1000;
+rseggroups = {};
+for i=1:length(seggroups)
+    val = [];
+    for r=1:randsize
+       rseggroups{r,i} = randomize_seggroup(seggroups{i}, eeg_td_all{1});
+    end    
+end	
 
 
 corrmat = [];
@@ -138,14 +148,18 @@ eegtable_val = table;
 eegtable_sig = table;
 for bandi=1:size(result,1)
 
-    [eeg_value, eeg_sig, meanr, stdr] = segment_by_timedata(eeg_td_all{bandi}, seggroups, 1000);    
-	
-	eegtable_val = [eegtable_val ; array2table(eeg_value)];
+    [eeg_value, eeg_sig, meanr, stdr] = segment_by_timedata(eeg_td_all{bandi}, seggroups, 1000);
+    [reeg_value, reeg_sig, rmeanr, rstdr] = segment_by_timedata(eeg_td_all{bandi}, rseggroups, 1);
+
+ 	eegtable_val = [eegtable_val ; array2table(eeg_value)];
 	eegtable_sig = [eegtable_sig ; array2table(eeg_sig)];
 	
+    meanr2 = mean(reeg_value);
+    stdr2 = std(reeg_value)
+    eeg_sig2 = (eeg_value - meanr2)./stdr2;
 	
     for i=1:length(seggroups)
-    	disp(sprintf('Band %d Name %s - Val %f (std %f)', bandi, seggroups{i}.name, eeg_value(i), eeg_sig(i)));
+    	disp(sprintf('Band %d Name %s - Val %f (std %f %f)', bandi, seggroups{i}.name, eeg_value(i), eeg_sig(i), eeg_sig2(i)));
     end
 	
 
@@ -162,7 +176,26 @@ for bandi=1:size(result,1)
 	t.Properties.VariableNames = strrep(names,' ','_');
     disp(t);
     
-	
+
+    eegxcorr2 = [];
+    for i=1:length(seggroups)
+        for j=1:length(seggroups)
+            % see how the difference between the values of people i and j
+            % are in stds in the distribution of their diff
+            val = eeg_value(i) - eeg_value(j);
+            meandiff = meanr2(i) - meanr2(j);
+            stddiff = sqrt(stdr2(i)^2 + stdr2(j)^2);
+            eegxcorr2(i,j)= (val-meandiff)/stddiff;
+        end
+    end
+	t = array2table(eegxcorr2);
+	t.Properties.RowNames = names;
+	t.Properties.VariableNames = strrep(names,' ','_');
+    disp(t);
+            
+    
+    
+    
     cslider(bandi) = corr(eeg_value', slider_value');
     csliderabs(bandi) = corr(eeg_value', abs(slider_value)');        	
     cpower(bandi) = corr(eeg_value', sliderpower_value');
