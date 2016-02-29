@@ -10,8 +10,6 @@ load('cleanrun3-dem\step6_CorrSpectoTimeBands');
 %load('step6_CorrSpectoTimeBands_1_315000');
 eeg_data = result;
 
-eeg_data = eeg_data(:,[1:length(eeg_data)-2*60]); % NOTE. add this to POIanalysis in a general way. cant have EEG data for periods we dont have sliders for.
-
 % process debate csv
 segtable = readtable('slider-data\debate2-speaker-data.csv');
 segtable.Properties.VariableNames = {'d1', 'startTS', 'd2','d3', 'duration', 'name'};

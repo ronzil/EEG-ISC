@@ -15,33 +15,6 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
-% save only segtable minimum of minlength
-minlength = 15000;
-segtable = segtable(find(segtable.duration>minlength),:);
-% skip first skipahread seconds
-skipahead = 10000;
-segtable.startTS = segtable.startTS + skipahead;
-segtable.duration = segtable.duration - skipahead;
-
-% remove segments that we have no EEG data for
-segtable = segtable(find(segtable.startTS>eeg_time_unix),:);
-segtable = segtable(find(segtable.startTS-eeg_time_unix+segtable.duration<length(eeg_data)*1000),:);
-
-%%%% seggroups. a cell array contains a struct with fields
-% name - name of the segment group
-% data - 2D array [startTS, duration]. Each line is a segment
-seggroups = {};
-names = unique(segtable.name);
-for i=1:length(names)
-	name = names{i};
-	data = table2array(segtable(find(strcmp(segtable.name,names(i))), 1:2)); % NOTE FIX THIS
-	seggroups{i} = struct('name', name, 'data', data);
-end	
-	
-
-
-
 %%%%%%% timedata. is a struct with the following properties
 %   .data - vector of values
 %   .startTS - timestamp of first value in unix time
@@ -65,12 +38,50 @@ sliderpower_td_all_smooth.data = tsmovavg(sliderpower_td_all_smooth.data,'s',30)
 sliderpower_td_all_smooth.data = sliderpower_td_all_smooth.data(30:end);
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% remove eeg data for times we dont have slider data
+
+assert(eeg_time_unix>slider_td_all.startTS); % don't mess with the starting point
+d = (eeg_time_unix + length(eeg_data)*1000) - (slider_td_all.startTS + length(slider_td_all.data)*slider_td_all.step) -1;
+if (d>0)
+	eeg_data = eeg_data(:,[1:length(eeg_data)-round(d/1000)]);
+end	
+
+
+% save only segtable minimum of minlength
+minlength = 15000;
+segtable = segtable(find(segtable.duration>minlength),:);
+% skip first skipahread seconds
+skipahead = 10000;
+segtable.startTS = segtable.startTS + skipahead;
+segtable.duration = segtable.duration - skipahead;
+
+% remove segments that we have no EEG data for
+segtable = segtable(find(segtable.startTS>eeg_time_unix),:);
+segtable = segtable(find(segtable.startTS-eeg_time_unix+segtable.duration<length(eeg_data)*1000),:);
+
+%%%% seggroups. a cell array contains a struct with fields
+% name - name of the segment group
+% data - 2D array [startTS, duration]. Each line is a segment
+seggroups = {};
+names = unique(segtable.name);
+for i=1:length(names)
+	name = names{i};
+	data = table2array(segtable(find(strcmp(segtable.name,names(i))), 1:2));
+	seggroups{i} = struct('name', name, 'data', data);
+end	
+	
+
+
+
+
+
 %%%%
 
 eeg_td_all = {};
 for bandi=1:size(eeg_data,1)
     eeg_values = eeg_data(bandi,:);
-    eeg_td_all{bandi} = struct('startTS',eeg_time_unix, 'step', 1000, 'data', eeg_values);
+    eeg_td_all{bandi} = struct('startTS',eeg_time_unix, 'step', 1000, 'data', eeg_values); %note 1000
 end    
 
 
