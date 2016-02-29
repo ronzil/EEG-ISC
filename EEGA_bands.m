@@ -312,7 +312,7 @@ function allBandsCorrMulti = calc_rand_correlations(spectogramsBandsPerPerson, s
 	startingTimePerPerson = randi(round(segment_length-calclength), 1,peoplenum);
 
 	% calculate how many random runs we need to match the ammount of real data we have
-	randnum = round(segment_length/calclength);
+	randnum = 100;
 	allBandsCorrMulti=[];
 	for i=1:randnum
 		allBandsCorr = do_calc_correlations(spectogramsBandsPerPerson, startingTimePerPerson, calclength, window);
