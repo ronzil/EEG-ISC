@@ -91,14 +91,13 @@ end
 corrmat = [];
 rcorrmat = [];
 for i=1:length(seggroups)
-	for bandi=1:size(eeg_data,1)
+    val = [];
+    for r=1:100
+       rseggroup = randomize_segments(seggroups{i}, eeg_td_all{1});
+       val(r) = corr_timedatas_by_seggroup(slider_td_all, eeg_td_all{1}, rseggroup);
+    end    
 
-        val = [];
-        for r=1:100
-            rseggroup = randomize_segments(seggroups{i}, eeg_td_all{bandi});
-            val(r) = corr_timedatas_by_seggroup(slider_td_all, eeg_td_all{bandi}, rseggroup);
-        end    
-        
+	for bandi=1:size(eeg_data,1)
         corrmat(bandi,i) = corr_timedatas_by_seggroup(slider_td_all, eeg_td_all{bandi}, seggroups{i});
         rcorrmat(bandi,i) = (corrmat(bandi,i)-mean(val))/std(val);
     end
@@ -180,9 +179,6 @@ for bandi=1:size(result,1)
     disp(winlist');
     
 end 
-
-maxv = max()
-eegtable_sig = []
 
 eegtable_val.Properties.VariableNames = strrep(names,' ','_');
 eegtable_sig.Properties.VariableNames = strrep(names,' ','_');
