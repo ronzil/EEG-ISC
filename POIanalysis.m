@@ -3,14 +3,14 @@
 %%% get EEG data
 eeg_time = eeg_starttime(alldata_rep{1}); % note
 eeg_time_unix = seconds(eeg_time-datetime(1970,1,1,0,0,0)+hours(6))*1000;
-load('step6_CorrSpectoTimeBands');
+load('cleanrun3\step6_CorrSpectoTimeBands');
 %load('step6_CorrSpectoTimeBands_1_315000');
 eeg_data = result;
 %eeg_values = mean(result);
 
 
 % process debate csv
-segtable = readtable('debate1-speaker-data.csv');
+segtable = readtable('slider-data\debate1-speaker-data.csv');
 assert (length(segtable.Properties.VariableNames)==3);
 segtable.Properties.VariableNames = {'startTS', 'duration', 'name'};
 segtable.duration = segtable.duration*1000; %convert to miliseconds
@@ -47,7 +47,7 @@ end
 %   .step - time step between samples in miliseconds. (1/srate)
 
 % prepare slider timedata
-slider_running = readtable('debates1-slider-clean.csv');
+slider_running = readtable('slider-data\debates1-slider-clean.csv');
 startTS = slider_running(1,:).Timestamp;
 step = (slider_running(2,:).Timestamp - slider_running(1,:).Timestamp);
 data = mean(table2array(slider_running(:, 3:end))');
@@ -62,7 +62,7 @@ slider_td_all_smooth.data = data(30:end);
 
 
 %% prepare slider power timedata
-sliderpower_td_all = sliderpower('debate1-events_data.csv', 1000);
+sliderpower_td_all = sliderpower('slider-data\debate1-events_data.csv', 1000);
 
 sliderpower_td_all_smooth = sliderpower_td_all;
 
@@ -85,13 +85,14 @@ end
 corrmat = [];
 rcorrmat = [];
 for i=1:length(segments)
-    val = [];
-    for r=1:1000
-        rsegment = randomize_segments(segments{i}, eeg_td_all{1});
-        val(r) = corr_timedatas_by_segments(slider_td_all, eeg_td_all{1}, rsegment);
-    end    
-
 	for bandi=1:size(eeg_data,1)
+
+        val = [];
+        for r=1:100
+            rsegment = randomize_segments(segments{i}, eeg_td_all{bandi});
+            val(r) = corr_timedatas_by_segments(slider_td_all, eeg_td_all{bandi}, rsegment);
+        end    
+        
         corrmat(bandi,i) = corr_timedatas_by_segments(slider_td_all, eeg_td_all{bandi}, segments{i});
         rcorrmat(bandi,i) = (corrmat(bandi,i)-mean(val))/std(val);
     end
@@ -124,12 +125,15 @@ disp(rtable);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+mmeanr = mean(slider_td_all.data);
+sstdr = std(slider_td_all.data);
+
 disp('eeg values');
 eegtable_val = table;
 eegtable_sig = table;
 for bandi=1:size(result,1)
 
-    [eeg_value, eeg_sig] = segment_by_timedata(eeg_td_all{bandi}, segments, 1000);    
+    [eeg_value, eeg_sig, meanr, stdr] = segment_by_timedata(eeg_td_all{bandi}, segments, 1000);    
 	
 	eegtable_val = [eegtable_val ; array2table(eeg_value)];
 	eegtable_sig = [eegtable_sig ; array2table(eeg_sig)];
@@ -139,7 +143,20 @@ for bandi=1:size(result,1)
     	disp(sprintf('Band %d Name %s - Val %f (std %f)', bandi, segments{i}.name, eeg_value(i), eeg_sig(i)));
     end
 	
-	
+
+    eegxcorr = [];
+    for i=1:length(segments)
+        for j=1:length(segments)
+			vali = (eeg_value(i)-meanr(j))/stdr(j);
+			valj = (eeg_value(j)-meanr(j))/stdr(j);
+            eegxcorr(i,j) = (vali-valj);
+        end
+    end
+	t = array2table(eegxcorr);
+	t.Properties.RowNames = names;
+	t.Properties.VariableNames = strrep(names,' ','_');
+    disp(t);
+    
 	
     cslider(bandi) = corr(eeg_value', slider_value');
     csliderabs(bandi) = corr(eeg_value', abs(slider_value)');        	
