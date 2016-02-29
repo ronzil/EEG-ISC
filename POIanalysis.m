@@ -93,7 +93,7 @@ rcorrmat = [];
 for i=1:length(seggroups)
     val = [];
     for r=1:100
-       rseggroup = randomize_segments(seggroups{i}, eeg_td_all{1});
+       rseggroup = randomize_seggroup(seggroups{i}, eeg_td_all{1});
        val(r) = corr_timedatas_by_seggroup(slider_td_all, eeg_td_all{1}, rseggroup);
     end    
 

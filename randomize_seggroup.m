@@ -1,4 +1,4 @@
-function rsegments = randomize_segments(seggroup, timedata)
+function rseggroup = randomize_seggroup(seggroup, timedata)
     % get the random segments
     % get the total time value of all the 
     durs = seggroup.data(:,2);
@@ -11,8 +11,8 @@ function rsegments = randomize_segments(seggroup, timedata)
         
     randseg = [randts , durs];
     
-    rsegments = seggroup;
-    rsegments.data = randseg;
+    rseggroup = seggroup;
+    rseggroup.data = randseg;
         
 
 end
