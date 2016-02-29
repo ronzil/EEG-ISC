@@ -95,11 +95,11 @@ for i=1:length(seggroups)
 
         val = [];
         for r=1:100
-            rsegment = randomize_segments(seggroups{i}, eeg_td_all{bandi});
-            val(r) = corr_timedatas_by_segments(slider_td_all, eeg_td_all{bandi}, rsegment);
+            rseggroup = randomize_segments(seggroups{i}, eeg_td_all{bandi});
+            val(r) = corr_timedatas_by_seggroup(slider_td_all, eeg_td_all{bandi}, rseggroup);
         end    
         
-        corrmat(bandi,i) = corr_timedatas_by_segments(slider_td_all, eeg_td_all{bandi}, seggroups{i});
+        corrmat(bandi,i) = corr_timedatas_by_seggroup(slider_td_all, eeg_td_all{bandi}, seggroups{i});
         rcorrmat(bandi,i) = (corrmat(bandi,i)-mean(val))/std(val);
     end
 end

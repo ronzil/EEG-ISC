@@ -25,7 +25,7 @@ function [res, significance, meanr, stdr] = segment_by_timedata(timedata, seggro
     end
     
     for i=1:length(seggroups)
-        [v,s,mr,sr] = do_segment_by_timedata_with_random(timedata, seggroups{i}.data, randnum);
+        [v,s,mr,sr] = do_segment_by_timedata_with_random(timedata, seggroups{i}, randnum);
         res(i) = v;
         significance(i) = s;
         meanr(i) = mr;
@@ -35,10 +35,10 @@ function [res, significance, meanr, stdr] = segment_by_timedata(timedata, seggro
 end
 
 
-function [res, significance, meanr, stdr] = do_segment_by_timedata_with_random(timedata, seggroup_data, randnum)
+function [res, significance, meanr, stdr] = do_segment_by_timedata_with_random(timedata, seggroup, randnum)
     % get the random segments
     % get the total time value of all the 
-    durs = seggroup_data(:,2);
+    durs = seggroup.data(:,2);
     totaldurlen = sum(durs);
     totaltime = length(timedata.data)*timedata.step;
     rval = totaltime - totaldurlen;
@@ -47,16 +47,17 @@ function [res, significance, meanr, stdr] = do_segment_by_timedata_with_random(t
         randts = timedata.startTS + sort(randperm(rval, length(durs)))';
         randts = randts + cumsum([0;durs(1:end-1)]);
         
-        randseg = [randts , durs];
+        randsegdata = [randts , durs];
+		randseggroup = struct('data',randsegdata);
         
-        vec = vector_from_timedata_by_segments(timedata, randseg);
+        vec = cut_timedata_by_seggroup(timedata, randseggroup);
         val(i)= mean(vec);
     end
     
     meanr = mean(val);
     stdr = std(val);
     
-    vec = vector_from_timedata_by_segments(timedata, seggroup_data);
+    vec = cut_timedata_by_seggroup(timedata, seggroup);
     res = mean(vec);
     
     significance = (res-meanr)/stdr;
