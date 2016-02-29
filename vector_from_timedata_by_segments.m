@@ -1,9 +1,9 @@
-function vector = vector_from_timedata_by_segments(timedata, segment_data)
+function vector = vector_from_timedata_by_segments(timedata, seggroup_data)
 
     step = timedata.step;
 
-	startoffset = round((segment_data(:,1) - timedata.startTS)/step) + 1;
-    endoffset = round(startoffset + segment_data(:,2)/step - 1);
+	startoffset = round((seggroup_data(:,1) - timedata.startTS)/step) + 1;
+    endoffset = round(startoffset + seggroup_data(:,2)/step - 1);
     
     % note. fix this by getting the last chunk of the EEG data
     startoffset = max(startoffset, 1);
@@ -21,7 +21,7 @@ function vector = vector_from_timedata_by_segments(timedata, segment_data)
 
     vector = [];
 	% go over all the segments
-	for i=1:size(segment_data,1)
+	for i=1:size(seggroup_data,1)
 %        if (endoffset(i) == startoffset(i)) continue; end% note. remove when added chunks 
 
 %		val(i) = mean(timedata.data(startoffset:durationoffset));

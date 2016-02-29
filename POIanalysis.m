@@ -27,15 +27,15 @@ segtable.duration = segtable.duration - skipahead;
 segtable = segtable(find(segtable.startTS>eeg_time_unix),:);
 segtable = segtable(find(segtable.startTS-eeg_time_unix+segtable.duration<length(eeg_data)*1000),:);
 
-%%%% segments. a cell array contains a struct with fields
+%%%% seggroups. a cell array contains a struct with fields
 % name - name of the segment group
-% data - 2D array [startTS, duration]
-segments = {};
+% data - 2D array [startTS, duration]. Each line is a segment
+seggroups = {};
 names = unique(segtable.name);
 for i=1:length(names)
 	name = names{i};
 	data = table2array(segtable(find(strcmp(segtable.name,names(i))), 1:2));
-	segments{i} = struct('name', name, 'data', data);
+	seggroups{i} = struct('name', name, 'data', data);
 end	
 	
 
@@ -84,16 +84,16 @@ end
 
 corrmat = [];
 rcorrmat = [];
-for i=1:length(segments)
+for i=1:length(seggroups)
 	for bandi=1:size(eeg_data,1)
 
         val = [];
         for r=1:100
-            rsegment = randomize_segments(segments{i}, eeg_td_all{bandi});
+            rsegment = randomize_segments(seggroups{i}, eeg_td_all{bandi});
             val(r) = corr_timedatas_by_segments(slider_td_all, eeg_td_all{bandi}, rsegment);
         end    
         
-        corrmat(bandi,i) = corr_timedatas_by_segments(slider_td_all, eeg_td_all{bandi}, segments{i});
+        corrmat(bandi,i) = corr_timedatas_by_segments(slider_td_all, eeg_td_all{bandi}, seggroups{i});
         rcorrmat(bandi,i) = (corrmat(bandi,i)-mean(val))/std(val);
     end
 end
@@ -103,10 +103,10 @@ rcorrmat
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-[slider_value, slider_sig] = segment_by_timedata(slider_td_all, segments, 100);    
-[sliderpower_value, sliderpower_sig] = segment_by_timedata(sliderpower_td_all, segments, 100);    
-[slider_smooth_value, slider_smooth_sig] = segment_by_timedata(slider_td_all_smooth, segments, 100);    
-[sliderpower_smooth_value, sliderpower_smooth_sig] = segment_by_timedata(sliderpower_td_all_smooth, segments, 100);    
+[slider_value, slider_sig] = segment_by_timedata(slider_td_all, seggroups, 100);    
+[sliderpower_value, sliderpower_sig] = segment_by_timedata(sliderpower_td_all, seggroups, 100);    
+[slider_smooth_value, slider_smooth_sig] = segment_by_timedata(slider_td_all_smooth, seggroups, 100);    
+[sliderpower_smooth_value, sliderpower_smooth_sig] = segment_by_timedata(sliderpower_td_all_smooth, seggroups, 100);    
 
 
 rtable = array2table([slider_value;
@@ -133,20 +133,20 @@ eegtable_val = table;
 eegtable_sig = table;
 for bandi=1:size(result,1)
 
-    [eeg_value, eeg_sig, meanr, stdr] = segment_by_timedata(eeg_td_all{bandi}, segments, 1000);    
+    [eeg_value, eeg_sig, meanr, stdr] = segment_by_timedata(eeg_td_all{bandi}, seggroups, 1000);    
 	
 	eegtable_val = [eegtable_val ; array2table(eeg_value)];
 	eegtable_sig = [eegtable_sig ; array2table(eeg_sig)];
 	
 	
-    for i=1:length(segments)
-    	disp(sprintf('Band %d Name %s - Val %f (std %f)', bandi, segments{i}.name, eeg_value(i), eeg_sig(i)));
+    for i=1:length(seggroups)
+    	disp(sprintf('Band %d Name %s - Val %f (std %f)', bandi, seggroups{i}.name, eeg_value(i), eeg_sig(i)));
     end
 	
 
     eegxcorr = [];
-    for i=1:length(segments)
-        for j=1:length(segments)
+    for i=1:length(seggroups)
+        for j=1:length(seggroups)
 			vali = (eeg_value(i)-meanr(j))/stdr(j);
 			valj = (eeg_value(j)-meanr(j))/stdr(j);
             eegxcorr(i,j) = (vali-valj);

@@ -1,7 +1,7 @@
-function rsegments = randomize_segments(segments, timedata)
+function rsegments = randomize_segments(seggroup, timedata)
     % get the random segments
     % get the total time value of all the 
-    durs = segments.data(:,2);
+    durs = seggroup.data(:,2);
     totaldurlen = sum(durs);
     totaltime = length(timedata.data)*timedata.step;
     rval = totaltime - totaldurlen;
@@ -11,7 +11,7 @@ function rsegments = randomize_segments(segments, timedata)
         
     randseg = [randts , durs];
     
-    rsegments = segments;
+    rsegments = seggroup;
     rsegments.data = randseg;
         
 
