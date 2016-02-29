@@ -27,6 +27,7 @@ function EEGA_bands(dirname, alldata)
 	
 
     CorrSpectoTimeBands = [];
+	RandCorrSpectoTimeBands = [];
 	corrSig = [];
     
 	% iterate all data in 20 minute segments
@@ -69,8 +70,8 @@ function EEGA_bands(dirname, alldata)
 		spectogramsBandsPerPerson =  cachefun(@() make_bands(spectogramsPerPerson, numComponents), fname);
 
 		% add a band which is just a sliding windo average of the component data.
-%		fname = sprintf('step5a_averageWindow_%d_%d', start, internal_segment_length);						
-%		spectogramsBandsPerPerson =  cachefun(@() addAverageWindow(spectogramsBandsPerPerson, componentsPerPerson, numComponents), fname);
+		fname = sprintf('step5a_averageWindow_%d_%d', start, internal_segment_length);						
+		spectogramsBandsPerPerson =  cachefun(@() addAverageWindow(spectogramsBandsPerPerson, componentsPerPerson, numComponents), fname);
 
 		% calcluate the correlation of each band 	
 		fname = sprintf('step6_CorrSpectoTimeBands_%d_%d', start, internal_segment_length);								
@@ -82,6 +83,9 @@ function EEGA_bands(dirname, alldata)
 		% calculate the random correlation of each band
 		fname = sprintf('step7_RandCorrSpectoTimeBands_%d_%d', start, internal_segment_length);								
 		randbandcorrMulti = cachefun(@() calc_rand_correlations(spectogramsBandsPerPerson, segment_length/srate), fname);
+		
+        % accumilate all rand correlations.
+        RandCorrSpectoTimeBands = [RandCorrSpectoTimeBands, randbandcorrMulti];
 
 		% calculate the significance for each band
 		fname = sprintf('step8_SignificanceVec_%d_%d', start, internal_segment_length);								        
@@ -92,12 +96,12 @@ function EEGA_bands(dirname, alldata)
     end	
 		
     % save correltion for entire time span.
-    % name result for consistancy 
-    result = CorrSpectoTimeBands;
-    save('step6_CorrSpectoTimeBands', 'result');
+	cache_save(CorrSpectoTimeBands, 'step6_CorrSpectoTimeBands');
+	cache_save(corrSig, 'step8_SignificanceVec_accumilated');
+
+	fname = sprintf('step8a_SignificanceVec_all');								        
+	segBand = cachefun(@() calc_significance(CorrSpectoTimeBands, RandCorrSpectoTimeBands), fname);
 	
-	result = corrSig;
-    save('step8_SignificanceVec', 'result');
 	
 
     
@@ -312,7 +316,8 @@ function allBandsCorrMulti = calc_rand_correlations(spectogramsBandsPerPerson, s
 	startingTimePerPerson = randi(round(segment_length-calclength), 1,peoplenum);
 
 	% calculate how many random runs we need to match the ammount of real data we have
-	randnum = 100;
+	randnum = 100*round(segment_length/calclength);
+%	randnum = 100;
 	allBandsCorrMulti=[];
 	for i=1:randnum
 		allBandsCorr = do_calc_correlations(spectogramsBandsPerPerson, startingTimePerPerson, calclength, window);
@@ -476,20 +481,7 @@ end
 
 
 function result = cachefun(func, name)
-	global cache_dir__;
-	if (~exist(cache_dir__, 'dir'))
-        mkdir(cache_dir__);
-    end    
-        
-%	if (exist('__cache', 'var')==0)
-%		global __cache;
-%		__cache = struct;
-%	end
-	
-%	if (isfield(__cache, name))
-%		result = getfield(__cache, name);
-%	else
-		fname = strcat(cache_dir__, filesep,  name, '.mat');
+		fname = cache_get_fname(name);
 		if (exist(fname, 'file'))
 			clear result;
 			disp(sprintf('Loading %s...', fname));
@@ -499,7 +491,7 @@ function result = cachefun(func, name)
 			disp(sprintf('Calculating %s...', fname));
 			result = func();
             disp(sprintf('Saving %s...', fname));
-			save(fname, 'result', '-v7.3'); 
+			cache_save(result, name)
             disp(sprintf('Saved %s', fname));
 		end
 
@@ -509,5 +501,17 @@ function result = cachefun(func, name)
 	
 end
 
+function fname = cache_get_fname(name)
+	global cache_dir__;
+	if (~exist(cache_dir__, 'dir'))
+        mkdir(cache_dir__);
+    end    
+	
+	fname = strcat(cache_dir__, filesep,  name, '.mat');
+end
 
+function cache_save(result, name)
+	fname = cache_get_fname(name);
+	save(fname, 'result', '-v7.3'); 
+end
 	
