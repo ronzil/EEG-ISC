@@ -86,7 +86,7 @@ function EEGA_bands(dirname, alldata)
 		randbandcorrMulti = cachefun(@() calc_rand_correlations(spectogramsBandsPerPerson, segment_length/srate), fname);
 		
         % accumilate all rand correlations.
-        RandCorrSpectoTimeBands = [RandCorrSpectoTimeBands, randbandcorrMulti];
+        RandCorrSpectoTimeBands = cat(3, RandCorrSpectoTimeBands, randbandcorrMulti);
 
 		% calculate the significance for each band
 		fname = sprintf('step8_SignificanceVec_%d_%d', start, internal_segment_length);								        
