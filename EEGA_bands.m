@@ -1,7 +1,6 @@
 %%% EEG analysis
 
 function EEGA_bands(dirname, alldata) 
-
 	% this is the cache directory. Set here for cachefun
     global cache_dir__;
     cache_dir__ = dirname;
@@ -10,8 +9,10 @@ function EEGA_bands(dirname, alldata)
 	% so we allow null alldata for the first cachefun call to go through
 	if (~exist('alldata','var'))
 		alldata = '';
-	end
+    end
 
+   cache_log('Starting...');
+    
 	%step1 filter <1Hz and > 50Hz and subtract reference from #17
 	alldata = cachefun(@() do_filter(alldata), 'step1_dofilter');
     
@@ -489,9 +490,9 @@ function result = cachefun(func, name)
 			assert(exist('result', 'var') ~= 0, 'cache load didnt work');
 		else
 			cache_log(sprintf('Calculating %s...', fname));
-            tic;
+            timerrun = tic;
 			result = func();
-            cache_log(sprintf('Saving %s... (elapsed %d)', fname, toc));
+            cache_log(sprintf('Saving %s... (elapsed %f)', fname, toc(timerrun)));
 			cache_save(result, name)
             cache_log(sprintf('Saved %s', fname));
 		end
@@ -520,7 +521,7 @@ function cache_log(msg)
 	fname = cache_get_fname('runlog.txt');
 	f = fopen(fname, 'a');
 	disp(msg);
-	fprintf(f,'%s\n',msg);
+	fprintf(f,'%s: %s\n',datestr(datetime), msg);
 	fclose(f);
 end
 	
