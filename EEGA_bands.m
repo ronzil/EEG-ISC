@@ -340,23 +340,25 @@ function allBandsCorr = do_calc_correlations(spectogramsBandsPerPerson, starting
 	% calc the corr for the entire time per band
 	allBandsCorr = [];
 	parfor bandi = 1:bandsnum
+	
+        % build component matrix
+        compmat = [];
+        for personi = 1:peoplenum
+    		for compi = 1:componentnum
+    			starttimei = startingTimePerPerson(personi);				
+        		compmat = [compmat spectogramsBandsPerPerson{personi}{compi}(bandi, starttimei:starttimei+datalength+window-1)'];
+            end
+        end
+        
 		% go over time looking at a window
 		% calc the corr
 		corrtimevec = [];
+
 		for windowstart=1:datalength
 %			disp(sprintf('band %d windowstart %d', bandi, windowstart));
 			
-			% build component matrix
-			compmat = [];
-			for personi = 1:peoplenum
-				for compi = 1:componentnum
-					starttimei = startingTimePerPerson(personi)-1+windowstart;				
-					compmat = [compmat spectogramsBandsPerPerson{personi}{compi}(bandi, starttimei:starttimei+window-1)'];
-				end
-			end
-			
 			%boom
-			corrmat = corr(compmat);
+			corrmat = corr(compmat(windowstart:windowstart+window-1,:));
 
 			%now go over the person per person blocks in the matrix
 			avgvalue = 0;
@@ -365,13 +367,23 @@ function allBandsCorr = do_calc_correlations(spectogramsBandsPerPerson, starting
 					si = (personi-1)*componentnum+1;
 					sj = (personj-1)*componentnum+1;
 					
-					maxcorr = max(max(corrmat(si:si+componentnum-1,sj:sj+componentnum-1)));
+%					maxcorr = max(max(corrmat3(si:si+componentnum-1,sj:sj+componentnum-1)));
+                    b = corrmat(si:si+componentnum-1,sj:sj+componentnum-1);
+					maxcorr = max(b(:));
 					avgvalue = avgvalue + maxcorr;
 				end
 			end
 			
 			avgvalue = avgvalue / (peoplenum*(peoplenum-1)/2); % go from sum to average			
-		
+
+            %% tryied these optimiztions that werent faster.
+            %mb = max(im2col(corrmat3, [componentnum componentnum], 'distinct'));
+            %mb(1:peoplenum+1:peoplenum^2) = [];
+            %avg3 = mean(mb);
+            
+            %b = blockproc(corrmat3, [16 16],  @(block_struct) max(block_struct.data(:)));
+            %avg4 = (sum(b(:))-10)/90;
+            avgvalue= gather(avgvalue);
 			corrtimevec = [corrtimevec, avgvalue]; % create the time series
 		end
 		
