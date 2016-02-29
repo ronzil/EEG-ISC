@@ -484,18 +484,19 @@ function result = cachefun(func, name)
 		fname = cache_get_fname(name);
 		if (exist(fname, 'file'))
 			clear result;
-			disp(sprintf('Loading %s...', fname));
+			cache_log(sprintf('Loading %s...', fname));
 			load(fname); % should load a variable named result 
 			assert(exist('result', 'var') ~= 0, 'cache load didnt work');
 		else
-			disp(sprintf('Calculating %s...', fname));
+			cache_log(sprintf('Calculating %s...', fname));
+            tic;
 			result = func();
-            disp(sprintf('Saving %s...', fname));
+            cache_log(sprintf('Saving %s... (elapsed %d)', fname, toc));
 			cache_save(result, name)
-            disp(sprintf('Saved %s', fname));
+            cache_log(sprintf('Saved %s', fname));
 		end
 
-		disp(sprintf('Got %s', fname));					
+		cache_log(sprintf('Got %s', fname));					
 %		setfield(__cache, name, result);
 %	end	
 	
@@ -513,5 +514,13 @@ end
 function cache_save(result, name)
 	fname = cache_get_fname(name);
 	save(fname, 'result', '-v7.3'); 
+end
+
+function cache_log(msg)
+	fname = cache_get_fname('runlog.txt');
+	f = fopen(fname, 'a');
+	disp(msg);
+	fprintf(f,'%s\n',msg);
+	fclose(f);
 end
 	
