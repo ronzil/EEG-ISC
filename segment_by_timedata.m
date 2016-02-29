@@ -24,12 +24,14 @@ function [res, significance, meanr, stdr] = segment_by_timedata(timedata, seggro
         seggroups = {struct('data',seggroups)};
     end
     
-    for i=1:length(seggroups)
-        [v,s,mr,sr] = do_segment_by_timedata_with_random(timedata, seggroups{i}, randnum);
-        res(i) = v;
-        significance(i) = s;
-        meanr(i) = mr;
-        stdr(i) = sr;
+    for i=1:size(seggroups,1)
+		for j=1:size(seggroups,2)
+			[v,s,mr,sr] = do_segment_by_timedata_with_random(timedata, seggroups{i,j}, randnum);
+			res(i,j) = v;
+			significance(i,j) = s;
+			meanr(i,j) = mr;
+			stdr(i,j) = sr;
+        end
     end
 
 end
