@@ -49,10 +49,10 @@ end
 
 
 % save only segtable minimum of minlength
-minlength = 15000;
+minlength = 30000;
 segtable = segtable(find(segtable.duration>minlength),:);
 % skip first skipahread seconds
-skipahead = 10000;
+skipahead = 15000;
 segtable.startTS = segtable.startTS + skipahead;
 segtable.duration = segtable.duration - skipahead;
 
@@ -102,13 +102,13 @@ corrmat = [];
 rcorrmat = [];
 for i=1:length(seggroups)
     val = [];
-    for r=1:100
+    for r=1:1000
        rseggroup = randomize_seggroup(seggroups{i}, eeg_td_all{1});
-       val(r) = corr_timedatas_by_seggroup(slider_td_all, eeg_td_all{1}, rseggroup);
+       val(r) = corr_timedatas_by_seggroup(sliderpower_td_all, eeg_td_all{1}, rseggroup);
     end    
 
 	for bandi=1:size(eeg_data,1)
-        corrmat(bandi,i) = corr_timedatas_by_seggroup(slider_td_all, eeg_td_all{bandi}, seggroups{i});
+        corrmat(bandi,i) = corr_timedatas_by_seggroup(sliderpower_td_all, eeg_td_all{bandi}, seggroups{i});
         rcorrmat(bandi,i) = (corrmat(bandi,i)-mean(val))/std(val);
     end
 end
@@ -174,7 +174,7 @@ for bandi=1:size(result,1)
 	t = array2table(eegxcorr);
 	t.Properties.RowNames = names;
 	t.Properties.VariableNames = strrep(names,' ','_');
-    disp(t);
+%    disp(t);
     
 
     eegxcorr2 = [];
