@@ -26,17 +26,8 @@ step = (slider_running(2,:).Timestamp - slider_running(1,:).Timestamp);
 data = mean(table2array(slider_running(:, 3:end))');
 slider_td_all = struct('startTS',startTS, 'step', step, 'data', data);
 
-slider_td_all_smooth = slider_td_all;
-data = tsmovavg(slider_td_all_smooth.data,'s',30);
-slider_td_all_smooth.data = data(30:end);
-
-
 %% prepare slider power timedata
 sliderpower_td_all = sliderpower(slider_events_fn, 1000);
-sliderpower_td_all_smooth = sliderpower_td_all;
-sliderpower_td_all_smooth.data = tsmovavg(sliderpower_td_all_smooth.data,'s',30);
-sliderpower_td_all_smooth.data = sliderpower_td_all_smooth.data(30:end);
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % remove eeg data for times we dont have slider data
@@ -72,17 +63,38 @@ for i=1:length(names)
 end	
 	
 
-
-
-
-
-%%%%
-
 eeg_td_all = {};
 for bandi=1:size(eeg_data,1)
     eeg_values = eeg_data(bandi,:);
     eeg_td_all{bandi} = struct('startTS',eeg_time_unix, 'step', 1000, 'data', eeg_values); %note 1000
 end    
+
+%%% remove certain seggroups from all timedata's
+remove_labels = {'Commercials', 'Moderators'};
+remove_seggroup = struct('data',[]);
+for i=1:length(remove_labels)
+    remove_name = remove_labels{i};
+    ind = find(ismember(names,remove_name));
+    remove_seggroup.data = [remove_seggroup.data;seggroups{ind}.data];
+end    
+
+    for bandi=1:size(eeg_data,1)
+        clean_eeg_td_all{bandi} = timedata_remove_seggroup(eeg_td_all{bandi}, remove_seggroup);
+    end    
+    clean_slider_td_all = timedata_remove_seggroup(slider_td_all, seggroups{ind});
+    clean_sliderpower_td_all = timedata_remove_seggroup(sliderpower_td_all, remove_seggroup);
+
+%%%%
+
+
+
+slider_td_all_smooth = slider_td_all;
+data = tsmovavg(slider_td_all_smooth.data,'s',30);
+slider_td_all_smooth.data = data(30:end);
+
+sliderpower_td_all_smooth = sliderpower_td_all;
+sliderpower_td_all_smooth.data = tsmovavg(sliderpower_td_all_smooth.data,'s',30);
+sliderpower_td_all_smooth.data = sliderpower_td_all_smooth.data(30:end);
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -93,7 +105,7 @@ rseggroups = {};
 for i=1:length(seggroups)
     val = [];
     for r=1:randsize
-       rseggroups{r,i} = randomize_seggroup(seggroups{i}, eeg_td_all{1});
+       rseggroups{r,i} = randomize_seggroup(seggroups{i}, clean_eeg_td_all{1});
     end    
 end	
 
@@ -103,12 +115,12 @@ rcorrmat = [];
 for i=1:length(seggroups)
     val = [];
     for r=1:1000
-       rseggroup = randomize_seggroup(seggroups{i}, eeg_td_all{1});
-       val(r) = corr_timedatas_by_seggroup(sliderpower_td_all, eeg_td_all{1}, rseggroup);
+       rseggroup = randomize_seggroup(seggroups{i}, clean_eeg_td_all{1});
+       val(r) = corr_timedatas_by_seggroup(sliderpower_td_all, clean_eeg_td_all{1}, rseggroup);
     end    
 
 	for bandi=1:size(eeg_data,1)
-        corrmat(bandi,i) = corr_timedatas_by_seggroup(sliderpower_td_all, eeg_td_all{bandi}, seggroups{i});
+        corrmat(bandi,i) = corr_timedatas_by_seggroup(slider_td_all, eeg_td_all{bandi}, seggroups{i});
         rcorrmat(bandi,i) = (corrmat(bandi,i)-mean(val))/std(val);
     end
 end
@@ -118,10 +130,10 @@ rcorrmat
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-[slider_value, slider_sig] = segment_by_timedata(slider_td_all, seggroups, 100);    
-[sliderpower_value, sliderpower_sig] = segment_by_timedata(sliderpower_td_all, seggroups, 100);    
-[slider_smooth_value, slider_smooth_sig] = segment_by_timedata(slider_td_all_smooth, seggroups, 100);    
-[sliderpower_smooth_value, sliderpower_smooth_sig] = segment_by_timedata(sliderpower_td_all_smooth, seggroups, 100);    
+[slider_value, slider_sig] = segment_by_timedata(slider_td_all, seggroups, 1000);    
+[sliderpower_value, sliderpower_sig] = segment_by_timedata(sliderpower_td_all, seggroups, 1000);    
+[slider_smooth_value, slider_smooth_sig] = segment_by_timedata(slider_td_all_smooth, seggroups, 1000);    
+[sliderpower_smooth_value, sliderpower_smooth_sig] = segment_by_timedata(sliderpower_td_all_smooth, seggroups, 1000);    
 
 
 rtable = array2table([slider_value;
@@ -149,13 +161,13 @@ eegtable_sig = table;
 for bandi=1:size(result,1)
 
     [eeg_value, eeg_sig, meanr, stdr] = segment_by_timedata(eeg_td_all{bandi}, seggroups, 1000);
-    [reeg_value, reeg_sig, rmeanr, rstdr] = segment_by_timedata(eeg_td_all{bandi}, rseggroups, 1);
+    [reeg_value, reeg_sig, rmeanr, rstdr] = segment_by_timedata(clean_eeg_td_all{bandi}, rseggroups, 1);
 
  	eegtable_val = [eegtable_val ; array2table(eeg_value)];
 	eegtable_sig = [eegtable_sig ; array2table(eeg_sig)];
 	
     meanr2 = mean(reeg_value);
-    stdr2 = std(reeg_value)
+    stdr2 = std(reeg_value);
     eeg_sig2 = (eeg_value - meanr2)./stdr2;
 	
     for i=1:length(seggroups)
@@ -210,6 +222,16 @@ for bandi=1:size(result,1)
     winlist = names(perm);    
 %   	disp(sprintf('Band %d. Cslider %f. csliderabs %f, Csliderpower %f. mean abs %f.', bandi, sig, sig4, sig2, sig3 ));    
     disp(winlist');
+    for_paper = eeg_sig(perm);
+    s = '';
+    s2 = '';
+    for i=1:length(eeg_sig)
+        s = sprintf('%s &%.2f', s, for_paper(i));
+        s2 = sprintf('%s &%s', s2, winlist{i});
+        
+    end 
+    sprintf('%s\\\\\n%s\\\\',s2,s)
+
     
 end 
 

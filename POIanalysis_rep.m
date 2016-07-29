@@ -3,8 +3,10 @@
 %%% get EEG data
 eeg_time = eeg_starttime(alldata_rep{1}); % note
 eeg_time_unix = seconds(eeg_time-datetime(1970,1,1,0,0,0)+hours(6))*1000;
-load('cleanrun3\step6_CorrSpectoTimeBands');
+%load('cleanrun3\step6_CorrSpectoTimeBands');
+load('finalrun20-rep_1000rand\step6_CorrSpectoTimeBands');
 %load('step6_CorrSpectoTimeBands_1_315000');
+%load('finalrunfull-rep\step6_CorrSpectoTimeBands');
 eeg_data = result;
 
 

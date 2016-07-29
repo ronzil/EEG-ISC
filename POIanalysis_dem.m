@@ -6,7 +6,9 @@
 %%% get EEG data
 eeg_time = eeg_starttime(alldata_dem{1}); % note
 eeg_time_unix = seconds(eeg_time-datetime(1970,1,1,0,0,0)+hours(6))*1000;
-load('cleanrun3-dem\step6_CorrSpectoTimeBands');
+%load('finalrunfull-dem\step6_CorrSpectoTimeBands');
+load('finalrun20-dem\step6_CorrSpectoTimeBands');
+%load('cleanrun3-dem\step6_CorrSpectoTimeBands');
 %load('step6_CorrSpectoTimeBands_1_315000');
 eeg_data = result;
 
