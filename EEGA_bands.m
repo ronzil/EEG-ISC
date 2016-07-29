@@ -28,6 +28,7 @@ function EEGA_bands(dirname, alldata)
 	
 
     CorrSpectoTimeBands = [];
+%    CorrSpectoTimeBands_oneremoved = [];
 	RandCorrSpectoTimeBands = [];
 	corrSig = [];
     
@@ -77,9 +78,14 @@ function EEGA_bands(dirname, alldata)
 		% calcluate the correlation of each band 	
 		fname = sprintf('step6_CorrSpectoTimeBands_%d_%d', start, internal_segment_length);								
 		realbandcorr = cachefun(@() calc_correlations(spectogramsBandsPerPerson, segment_length/srate), fname);
+
+%		fname = sprintf('step6a_CorrSpectoTimeBands_one_removed_%d_%d', start, internal_segment_length);								
+%		realbandcorr_oneremoved = cachefun(@() calc_correlations_one_removed(spectogramsBandsPerPerson, segment_length/srate), fname);
+		
         
         % accumilate all correlations.
         CorrSpectoTimeBands = [CorrSpectoTimeBands, realbandcorr];
+%		CorrSpectoTimeBands_oneremoved = cat(2, CorrSpectoTimeBands_oneremoved, realbandcorr_oneremoved);
 
 		% calculate the random correlation of each band
 		fname = sprintf('step7_RandCorrSpectoTimeBands_really_100_%d_%d', start, internal_segment_length);								
@@ -98,6 +104,7 @@ function EEGA_bands(dirname, alldata)
 		
     % save correltion for entire time span.
 	cache_save(CorrSpectoTimeBands, 'step6_CorrSpectoTimeBands');
+%	cache_save(CorrSpectoTimeBands_oneremoved, 'step6a_CorrSpectoTimeBands_oneremoved');	
 	cache_save(RandCorrSpectoTimeBands, 'step7_RandCorrSpectoTimeBands');
 	cache_save(corrSig, 'step8_SignificanceVec_accumilated');
 
@@ -273,11 +280,6 @@ function spectogramsBandsPerPerson = make_bands(spectogramsPerPerson, numCompone
 			% holds the bands data
 			bandsdata = [];
 
-			% make 4Hz band			
-			bandsize = 4;
-			for i=1:bandsize:size(data,1)-bandsize+1
-				bandsdata = [bandsdata ; mean(data(i:i+bandsize-1, :))]; % average the frequencies from i to i+bandsdata
-			end	
 			% make 10Hz band			
 			bandsize = 10;
 			for i=1:bandsize:size(data,1)-bandsize+1
@@ -289,6 +291,21 @@ function spectogramsBandsPerPerson = make_bands(spectogramsPerPerson, numCompone
 		end
 	end
 end
+
+function allBandsCorr_one_removed = calc_correlations_one_removed(spectogramsBandsPerPerson, segment_length)
+% do calc for one person removed each time
+	allBandsCorr_one_removed = [];
+	peoplenum = length(spectogramsBandsPerPerson);	
+	for i=1:peoplenum
+		
+		partial = spectogramsBandsPerPerson(setdiff(1:peoplenum,i));
+		allBandsCorr = calc_correlations(partial, segment_length);
+
+		allBandsCorr_one_removed(:,:,i) = allBandsCorr;
+	end
+
+end
+
 
 
 function allBandsCorr = calc_correlations(spectogramsBandsPerPerson, segment_length)
