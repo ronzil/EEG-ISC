@@ -14,10 +14,10 @@ function EEGcell = eeg_multi_alignstart(EEGcell, extraSeconds)
 		end
 	end
 	
-	disp(sprintf('Trimming all EEG data to %s', datestr(latest)));
-	
 	% add extraSeconds
 	cutoff = latest + seconds(extraSeconds);
+
+	disp(sprintf('Trimming all EEG data to %s', datestr(cutoff)));
 
 %	% preform trim
 %	for i = 1:length(EEGcell)
