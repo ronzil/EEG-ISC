@@ -35,7 +35,7 @@ function EVENT = parsebvmrk(MRK)
 for idx = 1:size(MRK.markerinfos, 1)
     [mrkType mrkDesc EVENT(idx).latency EVENT(idx).duration  EVENT(idx).channel bvtime] = ...
         strread(MRK.markerinfos{idx, 1}, '%s%s%f%d%d%s', 'delimiter', ',');
-    EVENT(idx).bvtime = char(bvtime);
+    EVENT(idx).bvdatetime = parsebvtime(char(bvtime));
     EVENT(idx).bvmknum = MRK.markerinfos{idx, 2};
 
     if strcmpi(mrkType, 'New Segment') || strcmpi(mrkType, 'DC Correction')
