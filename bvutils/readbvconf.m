@@ -13,8 +13,6 @@
 %
 % Author: Andreas Widmann, University of Leipzig, 2007
 
-%123456789012345678901234567890123456789012345678901234567890123456789012
-
 % Copyright (C) 2007 Andreas Widmann, University of Leipzig, widmann@uni-leipzig.de
 %
 % This program is free software; you can redistribute it and/or modify
@@ -40,7 +38,7 @@ if nargin < 2
 end
 
 % Open and read file
-[IN, message] = fopen(fullfile(pathname, filename));
+[IN, message] = fopen(fullfile(pathname, filename), 'r');
 if IN == -1
     [IN, message] = fopen(fullfile(pathname, lower(filename)));
     if IN == -1
@@ -62,22 +60,34 @@ sectionArray = [strmatch('[', raw)' length(raw) + 1];
 for iSection = 1:length(sectionArray) - 1
 
     % Convert section name
-    fieldName = lower(char(strread(raw{sectionArray(iSection)}, '[%s', 'delimiter', ']')));
+    tmpstr    = deblank(raw{sectionArray(iSection)});
+    fieldName = lower(tmpstr(2:end-1));
+    %fieldName = lower(char(strread(tmpstr(2:end), '[%s', 'delimiter', ']')));
     fieldName(isspace(fieldName) == true) = [];
 
     % Fill structure with parameter value pairs
     switch fieldName
-        case {'commoninfos' 'binaryinfos'}
+        case {'commoninfos' 'binaryinfos' 'asciiinfos'}
             for line = sectionArray(iSection) + 1:sectionArray(iSection + 1) - 1
                 splitArray = strfind(raw{line}, '=');
                 CONF.(fieldName).(lower(raw{line}(1:splitArray(1) - 1))) = raw{line}(splitArray(1) + 1:end);
             end
-        case {'channelinfos' 'coordinates' 'markerinfos'}
+        case {'channelinfos' 'coordinates'}
             for line = sectionArray(iSection) + 1:sectionArray(iSection + 1) - 1
                 splitArray = strfind(raw{line}, '=');
                 CONF.(fieldName)(str2double(raw{line}(3:splitArray(1) - 1))) = {raw{line}(splitArray(1) + 1:end)};
             end
+        case {'markerinfos'} % Allow discontinuity for markers (but not channelinfos and coordinates!)
+            for line = sectionArray(iSection) + 1:sectionArray(iSection + 1) - 1
+                splitArray = strfind(raw{line}, '=');
+                CONF.(fieldName)(line - sectionArray(iSection), :) = {raw{line}(splitArray(1) + 1:end) str2double(raw{line}(3:splitArray(1) - 1))};
+            end
+            if ~all(1:size(CONF.(fieldName), 1) == [CONF.(fieldName){:, 2}])
+                warning('Marker number discontinuity.')
+            end
         case 'comment'
             CONF.(fieldName) = raw(sectionArray(iSection) + 1:sectionArray(iSection + 1) - 1);
+        otherwise
+            fprintf('Unrecognized entry: %s\n', fieldName);
     end
 end

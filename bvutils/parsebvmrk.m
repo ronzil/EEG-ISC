@@ -1,8 +1,6 @@
 % parsebvmrk() - convert Brain Vision Data Exchange format marker
 %                configuration structure to EEGLAB event structure
 %
-% Ronen: I made small changes to this file. You should run EEGLAB from the directory with this file for it to be used internally.
-%
 % Usage:
 %   >> EVENT = parsebvmrk(MRK);
 %
@@ -13,8 +11,6 @@
 %   EVENT - EEGLAB event structure
 %
 % Author: Andreas Widmann, University of Leipzig, 2007
-
-%123456789012345678901234567890123456789012345678901234567890123456789012
 
 % Copyright (C) 2007 Andreas Widmann, University of Leipzig, widmann@uni-leipzig.de
 %
@@ -36,12 +32,11 @@
 
 function EVENT = parsebvmrk(MRK)
 
-for idx = 1:length(MRK.markerinfos)
+for idx = 1:size(MRK.markerinfos, 1)
     [mrkType mrkDesc EVENT(idx).latency EVENT(idx).duration  EVENT(idx).channel bvtime] = ...
-        strread(MRK.markerinfos{idx}, '%s%s%f%d%d%s', 'delimiter', ',');
-		
-	EVENT(idx).bvtime = char(bvtime);
-
+        strread(MRK.markerinfos{idx, 1}, '%s%s%f%d%d%s', 'delimiter', ',');
+    EVENT(idx).bvtime = char(bvtime);
+    EVENT(idx).bvmknum = MRK.markerinfos{idx, 2};
 
     if strcmpi(mrkType, 'New Segment') || strcmpi(mrkType, 'DC Correction')
         EVENT(idx).type = 'boundary';

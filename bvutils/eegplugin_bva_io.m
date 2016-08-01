@@ -12,11 +12,7 @@
 % Author: Andreas Widmann for binary import, 2004
 %         Arnaud Delorme for Matlab import and EEGLAB interface
 %
-% Ronen Zilberman forked bva_io 1.57 to create bva_io_plus
-%
 % See also: pop_loadbv()
-
-%123456789012345678901234567890123456789012345678901234567890123456789012
 
 % Copyright (C) 2004 Andreas Widmann & Arnaud Delorme
 %
@@ -34,11 +30,11 @@
 % along with this program; if not, write to the Free Software
 % Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-% $Id: eegplugin_bva_io.m 48 2009-12-22 12:23:09Z andreaswidmann $
+% $Id: eegplugin_bva_io.m 53 2010-05-22 21:57:38Z arnodelorme $
 
 function vers = eegplugin_bva_io(fig, trystrs, catchstrs)
 
-    vers = 'bva_io_plus0.01';
+    vers = 'bva_io1.5.13';
     if nargin < 3
         error('eegplugin_bva_io requires 3 arguments');
     end;
