@@ -1,10 +1,16 @@
 %%% EEG analysis
 
-function EEGA_bands(dirname, alldata) 
-	% this is the cache directory. Set here for cachefun
-    global cache_dir__;
-    cache_dir__ = dirname;
+function EEGA_bands(config)
+    assert(isfield(config, 'data'), 'Must provide data in the form a cell array of EEGLAB''s EEG objects');
+    assert(isfield(config, 'run_name'), 'Must provide run_name string.');
+    
+	% store the config object
+    global config__global__;
+    config__global__ = config;
 	
+    %temp
+    alldata = config_param('data');
+    
 	% We allow calling with only the dirname if the cache is already populated.
 	% so we allow null alldata for the first cachefun call to go through
 	if (~exist('alldata','var'))
@@ -521,6 +527,23 @@ function res = freq(x)
 
 end
 
+function res = config_param(name) 
+	global config__global__;
+    if (isfield(config__global__, name))
+        res = config__global__.(name);
+        return
+    end
+
+    defaults = EEG_ISC_defaults();
+    if (isfield(defaults, name))
+        res = defaults.(name);
+        return
+    end
+    
+    assert(false, ['Configuration parameter not defined: ', name]);
+    
+end
+
 
 function result = cachefun(func, name)
 		fname = cache_get_fname(name);
@@ -545,7 +568,8 @@ function result = cachefun(func, name)
 end
 
 function fname = cache_get_fname(name)
-	global cache_dir__;
+	cache_dir__ = config_param('run_name');
+    
 	if (~exist(cache_dir__, 'dir'))
         mkdir(cache_dir__);
     end    
