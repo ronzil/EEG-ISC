@@ -7,16 +7,16 @@ function EEGdata = eeg_keeplongestsegment(EEGdata)
     end
         
     % find largest segment
-    latencies = [EEGdata.event.latency EEGdata.pnts+1];
+    latencies = [EEGdata.event(b).latency EEGdata.pnts+1];
     lengths = diff(latencies);
     [~, maxi] = max(lengths);
-    
+        
     % save the event
-    event = EEGdata.event(maxi);
+    event = EEGdata.event(b(maxi));
     
     % mark the segments for rejection
     reject = [];
-    for i = 1:length(EEGdata.event)
+    for i = 1:length(b)
         if (i ~= maxi)
             reject = [reject ; latencies(i), latencies(i+1)-1];
         end        
