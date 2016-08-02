@@ -1,6 +1,6 @@
 %%% EEG analysis
 
-function EEGA_bands(config)
+function EEG_ISC_run(config)
     assert(isfield(config, 'data'), 'Must provide data in the form a cell array of EEGLAB''s EEG objects');
     assert(isfield(config, 'run_name'), 'Must provide run_name string.');
     

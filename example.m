@@ -12,5 +12,5 @@ config.run_name = 'testgogo';
 config.data = alldata_rep;
 
 % run the algorithm
-EEGA_bands(config);
+EEG_ISC_run(config);
 
