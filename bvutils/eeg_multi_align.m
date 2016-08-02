@@ -24,6 +24,7 @@ end
 % go over all EEG recordings and check if there is more than one segment (due to
 % an error in the recording most likely.
 keep = 1:length(EEGcell);
+ok = true;
 for i = 1:length(EEGcell)
 
     b = eeg_getbounds(EEGcell{i}); 
@@ -37,11 +38,15 @@ for i = 1:length(EEGcell)
             disp('Removing EEG data from cell array');
             keep = setdiff(keep, i);
         else
-            assert(false, 'Aborting. Fix manually or use the fixMode parameter. See documentation.');
+            ok = false;
         end   
         
     end
 end
+
+% if bad data, abort.
+assert(ok, 'Aborting. Fix manually or use the fixMode parameter. See documentation.');
+
 
 % remove any data that is marked for removal.
 EEGcell = EEGcell(keep);
