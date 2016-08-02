@@ -1,7 +1,8 @@
 % Remove all but the longest segment in the EEG data
 function EEGdata = eeg_keeplongestsegment(EEGdata)
     % only needed if more than one segment
-    if (length(find(strcmp('boundary', {EEGdata.event.type}))) == 1)
+    b = eeg_getbounds(EEGdata);
+    if (length(b) == 1)
         return ;
     end
         
@@ -24,7 +25,7 @@ function EEGdata = eeg_keeplongestsegment(EEGdata)
     % trim the data to keep only 1 segment.
     EEGdata = eeg_eegrej( EEGdata, reject );
 
-    % manually create the single boundry event.
+    % manually create the single boundary event.
     EEGdata.event = event;
     EEGdata.event.latency = 1;
     

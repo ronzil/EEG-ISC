@@ -26,7 +26,7 @@ end
 keep = 1:length(EEGcell);
 for i = 1:length(EEGcell)
 
-    b = find(strcmp('boundary', {EEGcell{i}.event.type})); 
+    b = eeg_getbounds(EEGcell{i}); 
     if (length(b) > 1)
         disp([EEGcell{i}.setname, ': Problem with data. Non continious stream.']);
         if (strcmp(fixMode, 'TRIM'))
