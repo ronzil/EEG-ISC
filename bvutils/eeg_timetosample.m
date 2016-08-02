@@ -1,5 +1,5 @@
-function res = eeg_timetosample(EEG, position)
+function res = eeg_timetosample(EEG, dtObj)
 	start = eeg_starttime(EEG);
-	diff = position - start;
+	diff = dtObj - start;
 	
 	res = round( seconds(diff) * EEG.srate);

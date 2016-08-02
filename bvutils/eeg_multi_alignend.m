@@ -6,7 +6,7 @@ function EEGcell = eeg_multi_alignend(EEGcell, extraSeconds)
 	end
 
 	% find eariliest ending point
-	earilest = datetime(3000,1,1); % bug 3000 imminent 
+	earilest = datetime(3000,1,1); % (yeah, this is an instance of "bug 3000"...) 
 	for i = 1:length(EEGcell)
 		en = eeg_starttime(EEGcell{i}) + seconds(length(EEGcell{i}.data)/EEGcell{i}.srate);
 		if (en <  earilest) 
@@ -17,7 +17,7 @@ function EEGcell = eeg_multi_alignend(EEGcell, extraSeconds)
 	% add extraSeconds
 	cutoff = earilest - seconds(extraSeconds);
 
-	disp(sprintf('Trimming end of all EEG data to %s', datestr(cutoff)));
+	disp(sprintf('Trimming EEG data to end at %s', datestr(cutoff)));
 
 %	% preform trim
 %	for i = 1:length(EEGcell)

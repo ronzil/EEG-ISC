@@ -1,22 +1,22 @@
 % Add a time based event to EEG. 
 % Inputs:
 %   EEG            - input dataset
-%   position       - datetime object of event
+%   dtObj          - datetime object of event
 %   duration       - duration of event in seconds
 %   title          - name of event
-function EEG = eeg_addtimeevent(EEG, position, duration, title)
+function EEG = eeg_addtimeevent(EEG, dtObj, duration, title)
 
 	% assert input is of the same length
-	assert(length(position) == length(duration));
-	assert(length(position) == length(title));
+	assert(length(dtObj) == length(duration));
+	assert(length(dtObj) == length(title));
 
 	% convert timestamps to sample number
-	sample = eeg_timetosample(EEG, position);
+	sample = eeg_timetosample(EEG, dtObj);
 	
 	% remove events that are in the past
 	good_samples = sample>0;
 	sample = sample(good_samples);
-	position = position(good_samples);
+	dtObj = dtObj(good_samples);
 	duration = duration(good_samples);
 	title = title(good_samples);
 	
