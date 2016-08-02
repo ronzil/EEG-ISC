@@ -4,16 +4,16 @@ function EEGdata = eeg_keeplongestsegment(EEGdata)
     if (length(find(strcmp('boundary', {EEGdata.event.type}))) == 1)
         return ;
     end
-    
-    disp([EEGdata.setname, ': EEG data is not continious. Attempting to remove all but the longest segment.']); 
-    
-    % get latencies
+        
+    % find largest segment
     latencies = [EEGdata.event.latency EEGdata.pnts+1];
     lengths = diff(latencies);
-    [v, maxi] = max(lengths);
+    [~, maxi] = max(lengths);
     
+    % save the event
     event = EEGdata.event(maxi);
     
+    % mark the segments for rejection
     reject = [];
     for i = 1:length(EEGdata.event)
         if (i ~= maxi)
@@ -21,8 +21,10 @@ function EEGdata = eeg_keeplongestsegment(EEGdata)
         end        
     end
     
+    % trim the data to keep only 1 segment.
     EEGdata = eeg_eegrej( EEGdata, reject );
 
+    % manually create the single boundry event.
     EEGdata.event = event;
     EEGdata.event.latency = 1;
     
