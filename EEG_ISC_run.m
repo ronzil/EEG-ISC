@@ -533,17 +533,20 @@ end
 % calculate hash of string.
 % from here: http://au.mathworks.com/matlabcentral/answers/45323-how-to-calculate-hash-sum-of-a-string-using-java
 function hash = string2hash(string)
-persistent md
-if isempty(md)
-    md = java.security.MessageDigest.getInstance('MD5');
-end
-hash = sprintf('%2.2x', typecast(md.digest(uint8(string)), 'uint8')');
+    persistent md
+    if isempty(md)
+        md = java.security.MessageDigest.getInstance('MD5');
+    end
+    hash = sprintf('%2.2x', typecast(md.digest(uint8(string)), 'uint8')');
 end
 
 function res = tostring(v)
    res = evalc('disp(v)');
 end
 
+% return the configuration parameter under name. 
+% if it doesn't exist, look at the default values.
+% abort if not found.
 function res = config_param(name) 
 	global config__global__;
     if (isfield(config__global__, name))
@@ -573,19 +576,22 @@ function calc_hash_config()
     config__global__.config_hash = string2hash(tostring(t));
 end
 
-function result = cachefun(func, name)
-		fname = cache_get_fname(name);
+% cache wrapper for function call. If the given key exists in the cache,
+% return it's value, otherwise run the function and store the result in the
+% cache.
+function result = cachefun(func, key)
+		fname = cache_get_filename(key);
 		if (exist(fname, 'file'))
 			clear result;
 			cache_log(sprintf('Loading %s...', fname));
 			load(fname); % should load a variable named result 
-			assert(exist('result', 'var') ~= 0, 'cache load didnt work');
+			assert(exist('result', 'var') ~= 0, 'cache load didn''t work');
 		else
 			cache_log(sprintf('Calculating %s...', fname));
             timerrun = tic;
 			result = func();
             cache_log(sprintf('Saving %s... (elapsed %f)', fname, toc(timerrun)));
-			cache_save(result, name)
+			cache_save(result, key)
             cache_log(sprintf('Saved %s', fname));
 		end
 
@@ -595,23 +601,34 @@ function result = cachefun(func, name)
 	
 end
 
-function fname = cache_get_fname(name)
-	cache_dir__ = fullfile(config_param('cache_base_directory'), [config_param('run_name'), '_', config_param('config_hash')]);
+% get the full path to the file in the cache directory for the given file
+% name
+function fname = cache_get_filename(key)
+	% cache dir contains the run_name and the hash or the parameters.
+    cache_dir__ = fullfile(config_param('cache_base_directory'), [config_param('run_name'), '_', config_param('config_hash')]);
     
+    % create it if it doesn't exist
 	if (~exist(cache_dir__, 'dir'))
         mkdir(cache_dir__);
     end    
 	
-	fname = strcat(cache_dir__, filesep,  name, '.mat');
+    % add a .mat extension if there is none
+    if (isempty(strfind(key, '.')))
+        key = [key, '.mat'];
+    end
+    
+	fname = fullfile(cache_dir__, key);
 end
 
-function cache_save(result, name)
-	fname = cache_get_fname(name);
+% save given result in cache under given name.
+function cache_save(result, key)
+	fname = cache_get_filename(key);
 	save(fname, 'result', '-v7.3'); 
 end
 
+% append a log message to the run log in the cache folder
 function cache_log(msg)
-	fname = cache_get_fname('runlog.txt');
+	fname = cache_get_filename('runlog.txt');
 	f = fopen(fname, 'a');
 	disp(msg);
 	fprintf(f,'%s: %s\n',datestr(datetime), msg);
