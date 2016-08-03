@@ -8,6 +8,9 @@ function EEG_ISC_run(config)
     global config__global__;
     config__global__ = config;
 	
+    % store the config's hash for the cache
+    calc_hash_config();
+    
     %temp
     alldata = config_param('data');
     
@@ -527,6 +530,20 @@ function res = freq(x)
 
 end
 
+% calculate hash of string.
+% from here: http://au.mathworks.com/matlabcentral/answers/45323-how-to-calculate-hash-sum-of-a-string-using-java
+function hash = string2hash(string)
+persistent md
+if isempty(md)
+    md = java.security.MessageDigest.getInstance('MD5');
+end
+hash = sprintf('%2.2x', typecast(md.digest(uint8(string)), 'uint8')');
+end
+
+function res = tostring(v)
+   res = evalc('disp(v)');
+end
+
 function res = config_param(name) 
 	global config__global__;
     if (isfield(config__global__, name))
@@ -544,6 +561,17 @@ function res = config_param(name)
     
 end
 
+% calculate a hash of the current config struct. Including the data file
+% names
+function calc_hash_config()
+    global config__global__;
+
+    % add the names of the data files to the hashed data
+    t = config__global__;
+    t.names = strjoin(cellfun(@(EEG) EEG.setname, t.data, 'UniformOutput', false));
+    
+    config__global__.config_hash = string2hash(tostring(t));
+end
 
 function result = cachefun(func, name)
 		fname = cache_get_fname(name);
@@ -568,7 +596,7 @@ function result = cachefun(func, name)
 end
 
 function fname = cache_get_fname(name)
-	cache_dir__ = config_param('run_name');
+	cache_dir__ = fullfile([config_param('run_name'), '_', config_param('config_hash')]);
     
 	if (~exist(cache_dir__, 'dir'))
         mkdir(cache_dir__);
