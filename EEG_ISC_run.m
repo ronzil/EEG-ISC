@@ -605,7 +605,7 @@ end
 % name
 function fname = cache_get_filename(key)
 	% cache dir contains the run_name and the hash or the parameters.
-    cache_dir__ = fullfile(config_param('cache_base_directory'), [config_param('run_name'), '_', config_param('config_hash')]);
+    cache_dir__ = fullfile(config_param('cache_base_directory'), 'cache', [config_param('run_name'), '_', config_param('config_hash')]);
     
     % create it if it doesn't exist
 	if (~exist(cache_dir__, 'dir'))
