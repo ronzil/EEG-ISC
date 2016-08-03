@@ -56,13 +56,11 @@ function EEG_ISC_run(config)
 		alldatatrim = do_trim(alldata, start, start+internal_segment_length-1);
 		
 		%calculate ica weights
-		fname = sprintf('step2_ica_%d_%d', start, internal_segment_length);
-		alldatatrim = cachefun(@() do_ica(alldatatrim), fname);
+		alldatatrim = cachefun(@() do_ica(alldatatrim), 'step2_ica', start);
 
 		%store the components data per person/
 		%allComponents is a cell array per person. Each cell contains component data array.
-		fname = sprintf('step3_components_%d_%d', start, internal_segment_length);		
-		componentsPerPerson = cachefun(@() get_components(alldatatrim), fname);
+		componentsPerPerson = cachefun(@() get_components(alldatatrim), 'step3_components', start);
 		
 		%find number of components by taking the minimum of all people. (sometimes its less than the channel number)
 		numComponents = intmax;
@@ -73,20 +71,16 @@ function EEG_ISC_run(config)
 		
 		%spectogramsPerPerson is a cell array per person. Each cell is: Cell array of components. Each cell is: bands X data (in seconds)
 		% spectogramsPerPerson{person_number}{component_number}{band_number, data}
-		fname = sprintf('step4_spectograms_%d_%d', start, internal_segment_length);				
-		spectogramsPerPerson = cachefun(@() get_spectograms(componentsPerPerson, numComponents), fname);
+		spectogramsPerPerson = cachefun(@() get_spectograms(componentsPerPerson, numComponents), 'step4_spectograms', start);
 
 		% make average bands of specific sizes from the spectograms.
-		fname = sprintf('step5_spectogramBands_%d_%d', start, internal_segment_length);						
-		spectogramsBandsPerPerson =  cachefun(@() make_bands(spectogramsPerPerson, numComponents), fname);
+		spectogramsBandsPerPerson =  cachefun(@() make_bands(spectogramsPerPerson, numComponents), 'step5_spectogramBands', start);
 
 		% add a band which is just a sliding windo average of the component data.
-		fname = sprintf('step5a_averageWindow_%d_%d', start, internal_segment_length);						
-		spectogramsBandsPerPerson =  cachefun(@() addAverageWindow(spectogramsBandsPerPerson, componentsPerPerson, numComponents), fname);
+		spectogramsBandsPerPerson =  cachefun(@() addAverageWindow(spectogramsBandsPerPerson, componentsPerPerson, numComponents), 'step5a_averageWindow', start);
 
 		% calcluate the correlation of each band 	
-		fname = sprintf('step6_CorrSpectoTimeBands_%d_%d', start, internal_segment_length);								
-		realbandcorr = cachefun(@() calc_correlations(spectogramsBandsPerPerson, segment_length/srate), fname);
+		realbandcorr = cachefun(@() calc_correlations(spectogramsBandsPerPerson, segment_length/srate), 'step6_CorrSpectoTimeBands', start);
 
 %		fname = sprintf('step6a_CorrSpectoTimeBands_one_removed_%d_%d', start, internal_segment_length);								
 %		realbandcorr_oneremoved = cachefun(@() calc_correlations_one_removed(spectogramsBandsPerPerson, segment_length/srate), fname);
@@ -97,15 +91,13 @@ function EEG_ISC_run(config)
 %		CorrSpectoTimeBands_oneremoved = cat(2, CorrSpectoTimeBands_oneremoved, realbandcorr_oneremoved);
 
 		% calculate the random correlation of each band
-		fname = sprintf('step7_RandCorrSpectoTimeBands_really_100_%d_%d', start, internal_segment_length);								
-		randbandcorrMulti = cachefun(@() calc_rand_correlations(spectogramsBandsPerPerson, segment_length/srate), fname);
+		randbandcorrMulti = cachefun(@() calc_rand_correlations(spectogramsBandsPerPerson, segment_length/srate), 'step7_RandCorrSpectoTimeBands_really_100_', start);
 		
         % accumilate all rand correlations.
         RandCorrSpectoTimeBands = cat(3, RandCorrSpectoTimeBands, randbandcorrMulti);
 
-		% calculate the significance for each band
-		fname = sprintf('step8_SignificanceVec_%d_%d', start, internal_segment_length);								        
-		segBand = cachefun(@() calc_significance(realbandcorr, randbandcorrMulti), fname);
+		% calculate the significance for each band	        
+		segBand = cachefun(@() calc_significance(realbandcorr, randbandcorrMulti), 'step8_SignificanceVec', start);
 		
 		corrSig = [corrSig; segBand(1,:)];
 		
@@ -116,21 +108,8 @@ function EEG_ISC_run(config)
 %	cache_save(CorrSpectoTimeBands_oneremoved, 'step6a_CorrSpectoTimeBands_oneremoved');	
 	cache_save(RandCorrSpectoTimeBands, 'step7_RandCorrSpectoTimeBands');
 	cache_save(corrSig, 'step8_SignificanceVec_accumilated');
-
-	fname = sprintf('step8a_SignificanceVec_all');								        
-	segBand = cachefun(@() calc_significance(CorrSpectoTimeBands, RandCorrSpectoTimeBands), fname);
-	
-	
-
-    
-		
-		
-	
-    
-	
-	
-
-
+				        
+	segBand = cachefun(@() calc_significance(CorrSpectoTimeBands, RandCorrSpectoTimeBands), 'step8a_SignificanceVec_all');
 
 end
 
@@ -576,10 +555,18 @@ function calc_hash_config()
     config__global__.config_hash = string2hash(tostring(t));
 end
 
-% cache wrapper for function call. If the given key exists in the cache,
+% Cache wrapper for function call. If the given key exists in the cache,
 % return it's value, otherwise run the function and store the result in the
 % cache.
-function result = cachefun(func, key)
+% Optionally, additional parts of the key can be provided as extra
+% parameters.
+function result = cachefun(func, key, varargin)
+
+        % add optional key parts to main key name
+        for k = 1:length(varargin)
+            key = [key, '_', num2str(varargin{k})];
+        end
+
 		fname = cache_get_filename(key);
 		if (exist(fname, 'file'))
 			clear result;
