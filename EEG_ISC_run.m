@@ -596,7 +596,7 @@ function result = cachefun(func, name)
 end
 
 function fname = cache_get_fname(name)
-	cache_dir__ = fullfile([config_param('run_name'), '_', config_param('config_hash')]);
+	cache_dir__ = fullfile(config_param('cache_base_directory'), [config_param('run_name'), '_', config_param('config_hash')]);
     
 	if (~exist(cache_dir__, 'dir'))
         mkdir(cache_dir__);
