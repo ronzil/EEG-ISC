@@ -10,6 +10,7 @@ alldata_rep = eeg_multi_align(alldata_rep, 60*1, 60*1, 'REMOVE');
 config = EEG_ISC_defaults();
 config.run_name = 'testgogo';
 config.data = alldata_rep;
+config.data_channels = [1:16];
 
 % run the algorithm
 EEG_ISC_run(config);

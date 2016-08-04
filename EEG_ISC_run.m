@@ -143,7 +143,7 @@ function alldata = do_ica(alldata)
 	parfor i = 1:length(alldata)
 		EEG = alldata{i};
 		
-		EEG = pop_runica(EEG, 'extended',1,'interupt','on', 'chanind', [1:16]);
+		EEG = pop_runica(EEG, 'extended',1,'interupt','on', 'chanind', config_param('data_channels'));
 		EEG = eeg_checkset( EEG ); 
 		
 		alldata{i} = EEG;
