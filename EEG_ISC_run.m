@@ -78,24 +78,24 @@ function results = EEG_ISC_run(config)
 		% calculate the random correlation of each band
 		randbandcorrMulti = cachefun(@() calc_rand_correlations(spectogramsBandsPerPerson, segment_length/srate), 'step7_RandCorrSpectoTimeBands_really_100_', start);
 		
-        % accumilate all rand correlations.
+        % accumulate all rand correlations.
         RandCorrSpectoTimeBands = cat(3, RandCorrSpectoTimeBands, randbandcorrMulti);
 
 		% calculate the significance for each band	        
 		sigBand = cachefun(@() calc_significance(realbandcorr, randbandcorrMulti), 'step8_SignificanceVec', start);
 		
-		corrSig = [corrSig; sigBand(1,:)];
-		break;
+		corrSig = [corrSig, sigBand];
+		
     end	
 
     % calculate the significance for each band for the entire span
-    sigBandAll = cachefun(@() calc_significance(CorrSpectoTimeBands, RandCorrSpectoTimeBands), 'step8a_SignificanceVec_all');
+    sigBandAll = cachefun(@() calc_significance(CorrSpectoTimeBands, RandCorrSpectoTimeBands), 'step8_SignificanceVec');
     
     % save calculations for entire time span.
 	cache_save(CorrSpectoTimeBands, 'step6_CorrSpectoTimeBands');
 %	cache_save(CorrSpectoTimeBands_oneremoved, 'step6a_CorrSpectoTimeBands_oneremoved');	
 	cache_save(RandCorrSpectoTimeBands, 'step7_RandCorrSpectoTimeBands');
-	cache_save(corrSig, 'step8_SignificanceVec_accumulated');
+	cache_save(corrSig, 'step8a_SignificanceVec_accumulated_per_segment');
 				        
     % make band labels.
     band_labels = {};
@@ -166,7 +166,7 @@ function componentsPerPerson = get_components(alldata)
 		for i = 1:length(alldata)
 		    EEG = alldata{i};
 			componentsPerPerson{i} = eeg_getdatact(EEG, 'component', [1:size(EEG.icaweights,1)]);
-%			componentsPerPerson{i} = EEG.data(1:16,:);
+	%		componentsPerPerson{i} = EEG.data(1:16,:);
 		end
 end		
 		
@@ -200,10 +200,8 @@ function spectogramsBandsPerPerson = addAverageWindow(spectogramsBandsPerPerson,
 			
 		end
 		
-	end	
-
-
-
+    end	
+ 
 end
 
 function spectogramsPerPerson = get_spectograms(componentsPerPerson, numcomponents)
@@ -459,34 +457,11 @@ end
 function segBand = calc_significance(realbandcorr, randbandcorrMulti)
 	%realbandcorr is a matrix of bands,time
 	%randbandcorrMulti is matrix of bands,time,interations
-	
-	significance = config_param('significance_threshold'); % 2 standard devs
-	
-	bandsnum = size(realbandcorr,1);
 
-	segBand = [];
-	% go over bands
-	% calc the corr for the entire time per band
-	allBandsCorr = [];
-	for bandi = 1:bandsnum
-		%calc 
-		randdata = randbandcorrMulti(bandi, :, :);
-		randdata = randdata(:);
-		randm = mean(randdata);
-		rands = std(randdata);
-		
-		limit = randm + rands*significance;
-		
-		realcount = sum(realbandcorr(bandi,:) > limit);
-		randcount = sum(randdata > limit);
-        
-		segBand(1,bandi) = realcount/length(realbandcorr);
-		segBand(2,bandi) = randcount/length(randdata);
-		segBand(3,bandi) = limit;
-		
-	end
-
-
+    realval = mean(realbandcorr, 2)';
+    randdist = mean(randbandcorrMulti, 3)';
+    
+    segBand = (realval - mean(randdist))./std(randdist);
 
 end
 
