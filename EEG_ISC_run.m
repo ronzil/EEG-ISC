@@ -11,17 +11,10 @@ function EEG_ISC_run(config)
     % store the config's hash for the cache
     calc_hash_config();
     
-    %temp
+    cache_log('Starting...');
+    
     alldata = config_param('data');
-    
-	% We allow calling with only the dirname if the cache is already populated.
-	% so we allow null alldata for the first cachefun call to go through
-	if (~exist('alldata','var'))
-		alldata = '';
-    end
-
-   cache_log('Starting...');
-    
+        
 	%step1 filter <1Hz and > 50Hz and subtract reference from #17
 	alldata = cachefun(@() do_filter(alldata), 'step1_dofilter');
     
@@ -41,10 +34,9 @@ function EEG_ISC_run(config)
 	RandCorrSpectoTimeBands = [];
 	corrSig = [];
     
-	% iterate all data in 20 minute segments
-	set_segment_length = 20*60*srate; 
-    startfrom = 1;
-	for start = startfrom:set_segment_length:datalength
+	% iterate all data in segments
+	set_segment_length = config_param('segment_length')*srate;
+	for start = 1:set_segment_length:datalength
 	
 		segment_length = min(set_segment_length, datalength-start+1-1*60*srate-1);
 	
@@ -52,7 +44,7 @@ function EEG_ISC_run(config)
         %moment we are trying to calculate. Therefore we need extra data to calculate the last second.
         internal_segment_length = segment_length + 1*60*srate; 
 		
-		%trim EEG to 20 minutes each time	
+		%trim EEG to segment length each time	
 		alldatatrim = do_trim(alldata, start, start+internal_segment_length-1);
 		
 		%calculate ica weights
@@ -179,9 +171,9 @@ end
 
 function spectogramsBandsPerPerson = addAverageWindow(spectogramsBandsPerPerson, componentsPerPerson, numComponents)
 	data_length = length(componentsPerPerson{1}); %in sample. note add assert that all components are same length
-    window = 5; % 5 seconds
-    frequencies = 60;
-	srate = 250; % note make nicer
+    window = config_param('spectogram_window_size'); % 5 seconds
+	data = config_param('data');
+    srate = data{1}.srate;
 	window_in_samples = window*srate;
 	
 	
@@ -217,10 +209,12 @@ function spectogramsPerPerson = get_spectograms(componentsPerPerson, numcomponen
 	% spectogramsPerPerson{i}{compind}[second, frequency]
 
 	data_length = length(componentsPerPerson{1}); %in sample. note add assert that all components are same length
-    window = 5; % 5 seconds
-    frequencies = 60;
-	srate = 250; % note make nicer
-	window_in_samples = window*srate;
+    window = config_param('spectogram_window_size'); % 5 seconds
+	data = config_param('data');
+    srate = data{1}.srate;
+    frequencies = config_param('spectogram_max_frequency');
+
+    window_in_samples = window*srate;
 	
 	
 	spectogramsPerPerson = {};
@@ -234,7 +228,7 @@ function spectogramsPerPerson = get_spectograms(componentsPerPerson, numcomponen
 			for step=1:srate:data_length-window_in_samples
 				data = componentsPerPerson{i}(compind, step:step+window_in_samples-1);
 				fft = freq(data);
-				fft = fft(1:frequencies); % cut the unwanted frequencies because they are all zero and take a lot of space
+				fft = fft(1:frequencies); % cut the unwanted frequencies because they are all zero and take a lot of space. NOTE CHECK THIS
 
 				% accumilate the fft data in columns. each column is one second.
 				compspec = [compspec , fft'];
@@ -268,12 +262,11 @@ function spectogramsBandsPerPerson = make_bands(spectogramsPerPerson, numCompone
 			% holds the bands data
 			bandsdata = [];
 
-			% make 10Hz band			
-			bandsize = 10;
+			% make bands			
+			bandsize = config_param('spectogram_band_size');
 			for i=1:bandsize:size(data,1)-bandsize+1
 				bandsdata = [bandsdata ; mean(data(i:i+bandsize-1, :))];
 			end	
-			
 			
 			spectogramsBandsPerPerson{individual}{compind} = bandsdata;
 		end
@@ -301,7 +294,7 @@ function allBandsCorr = calc_correlations(spectogramsBandsPerPerson, segment_len
 	peoplenum = length(spectogramsBandsPerPerson);
 	datalength = size(spectogramsBandsPerPerson{1}{1},2);
     
-    window = 30; % in seconds	
+    window = config_param('correlation_window_size'); % 30 seconds
     assert (segment_length + window <= datalength);
     
 	calclength = segment_length;
@@ -316,12 +309,10 @@ function allBandsCorrMulti = calc_rand_correlations(spectogramsBandsPerPerson, s
 	peoplenum = length(spectogramsBandsPerPerson);
 	datalength = size(spectogramsBandsPerPerson{1}{1},2);
 
-    window = 30; % in seconds	
-	calclength = 100;
+    window = config_param('correlation_window_size'); % 30 seconds
+    calclength = config_param('correlation_random_length');
 	
-	% calculate how many random runs we need to match the ammount of real data we have
-	randnum = 10*round(segment_length/calclength);
-	randnum = 100;
+	randnum = config_param('correlation_random_iterations');
 	allBandsCorrMulti=[];
 	for i=1:randnum
 		i	
@@ -466,7 +457,7 @@ function segBand = calc_significance(realbandcorr, randbandcorrMulti)
 	%realbandcorr is a matrix of bands,time
 	%randbandcorrMulti is matrix of bands,time,interations
 	
-	significance = 2; % standard devs
+	significance = config_param('significance_threshold'); % 2 standard devs
 	
 	bandsnum = size(realbandcorr,1);
 
@@ -502,7 +493,7 @@ end
 % convert to frequency domain
 function res = freq(x)
 	L=length(x);	 	 
-	NFFT=256;	 	 
+	NFFT=256;
 	X=fft(x,NFFT);	 	 
 	Px=X.*conj(X)/(NFFT*L); %Power of each freq components	 	 
 	res = Px(1:NFFT/2);
@@ -581,11 +572,6 @@ function result = cachefun(func, key, varargin)
 			cache_save(result, key)
             cache_log(sprintf('Saved %s', fname));
 		end
-
-		cache_log(sprintf('Got %s', fname));					
-%		setfield(__cache, name, result);
-%	end	
-	
 end
 
 % get the full path to the file in the cache directory for the given file
