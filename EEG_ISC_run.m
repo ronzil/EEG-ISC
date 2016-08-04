@@ -38,12 +38,14 @@ function EEG_ISC_run(config)
 	set_segment_length = config_param('segment_length')*srate;
 	for start = 1:set_segment_length:datalength
 	
-		segment_length = min(set_segment_length, datalength-start+1-1*60*srate-1);
-	
         %spectorgrams and correlations require a window of data from the
         %moment we are trying to calculate. Therefore we need extra data to calculate the last second.
-        internal_segment_length = segment_length + 1*60*srate; 
-		
+        %some padding to be on the safe side
+        extra_length = srate*(10+max([config_param('spectogram_window_size'), config_param('correlation_window_size')]));
+               
+		segment_length = min(set_segment_length, datalength-start+1-extra_length-1);
+        internal_segment_length = segment_length + extra_length; 
+	
 		%trim EEG to segment length each time	
 		alldatatrim = do_trim(alldata, start, start+internal_segment_length-1);
 		
