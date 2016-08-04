@@ -14,8 +14,8 @@ function EEG_ISC_run(config)
     cache_log(['Starting EEG ISC calculation. Using the following configuration: ', tostring(config)]);
     
     alldata = config_param('data');            
-	srate = alldata{1}.srate; %asserted to be all equal
-	datalength = alldata{1}.pnts; %asserted to be all equal
+	srate = alldata{1}.srate; %verified to be all equal
+	datalength = alldata{1}.pnts; %verified to be all equal
 
 	%step1 band pass filter.
 	alldata = cachefun(@() do_filter(alldata), 'step1_dofilter');
@@ -62,7 +62,7 @@ function EEG_ISC_run(config)
 		% make average bands of specific sizes from the spectograms.
 		spectogramsBandsPerPerson =  cachefun(@() make_bands(spectogramsPerPerson, numComponents), 'step5_spectogramBands', start);
 
-		% add a band which is just a sliding windo average of the component data.
+		% add a band which is just a sliding window average of the component data.
 		spectogramsBandsPerPerson =  cachefun(@() addAverageWindow(spectogramsBandsPerPerson, componentsPerPerson, numComponents), 'step5a_averageWindow', start);
 
 		% calcluate the correlation of each band 	
@@ -155,7 +155,7 @@ end
 
 function spectogramsBandsPerPerson = addAverageWindow(spectogramsBandsPerPerson, componentsPerPerson, numComponents)
 	data_length = length(componentsPerPerson{1}); %in samples.
-    window = config_param('spectogram_window_size'); % 5 seconds
+    window = config_param('spectogram_window_size'); % in seconds
 	data = config_param('data');
     srate = data{1}.srate;
 	window_in_samples = window*srate;
@@ -168,7 +168,7 @@ function spectogramsBandsPerPerson = addAverageWindow(spectogramsBandsPerPerson,
 		for compind = 1:numComponents % going over components
 			compspec = [];
 			
-			% go over the data in <window> size. and calculate the FFT			
+			% go over the data in <window> size. and calculate the mean			
 			for step=1:srate:data_length-window_in_samples
 				data = componentsPerPerson{i}(compind, step:step+window_in_samples-1);
 
