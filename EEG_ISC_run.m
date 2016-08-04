@@ -15,7 +15,7 @@ function EEG_ISC_run(config)
     
     alldata = config_param('data');
         
-	%step1 filter <1Hz and > 50Hz and subtract reference from #17
+	%step1 band pass filter <1Hz and > 50Hz
 	alldata = cachefun(@() do_filter(alldata), 'step1_dofilter');
     
 	%set data length as minimial length of EEG data from all people
@@ -108,22 +108,12 @@ end
 
 
 function alldata = do_filter(alldata)
-	disp('doing filter');
 	for i = 1:length(alldata)
 		EEG = alldata{i};
 		
+		EEG = pop_eegfiltnew(EEG, [], config_param('filter_low_edge'), [], true, [], 0); % high pass
+		EEG = pop_eegfiltnew(EEG, [], config_param('filter_high_edge'), [], 0, [], 0);%% low pass
 		EEG = eeg_checkset( EEG );
-		EEG = pop_chanedit(EEG, 'load',{'locations.loc' 'filetype' 'autodetect'},'setref',{'17' 'Ref'});
-		EEG = eeg_checkset( EEG );
-		EEG = pop_eegfiltnew(EEG, [], 1, 826, true, [], 0); %%filter data 1
-%		EEG = pop_eegfiltnew(EEG, [], 20, 166, true, [], 1);		%%filter below 20
-		EEG = eeg_checkset( EEG );
-		EEG = pop_eegfiltnew(EEG, [], 50, 66, 0, [], 0);%% filter data above 50
-		EEG = eeg_checkset( EEG );
-		EEG = pop_reref( EEG, 17); %reference to channel 17
-		EEG = eeg_checkset( EEG );
-%		EEG = pop_chanedit(EEG, 'delete', 18, 'delete', 17);
-%		EEG = eeg_checkset( EEG );
 		
 		alldata{i} = EEG;
 
@@ -212,7 +202,7 @@ function spectogramsPerPerson = get_spectograms(componentsPerPerson, numcomponen
     window = config_param('spectogram_window_size'); % 5 seconds
 	data = config_param('data');
     srate = data{1}.srate;
-    frequencies = config_param('spectogram_max_frequency');
+    frequencies = config_param('filter_high_edge');
 
     window_in_samples = window*srate;
 	
@@ -228,7 +218,7 @@ function spectogramsPerPerson = get_spectograms(componentsPerPerson, numcomponen
 			for step=1:srate:data_length-window_in_samples
 				data = componentsPerPerson{i}(compind, step:step+window_in_samples-1);
 				fft = freq(data);
-				fft = fft(1:frequencies); % cut the unwanted frequencies because they are all zero and take a lot of space. NOTE CHECK THIS
+				fft = fft(1:frequencies); % cut the unwanted frequencies because they are all zero and take a lot of space.
 
 				% accumilate the fft data in columns. each column is one second.
 				compspec = [compspec , fft'];

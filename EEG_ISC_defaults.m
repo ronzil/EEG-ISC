@@ -4,8 +4,10 @@ function config = EEG_ISC_defaults()
 
     config.cache_base_directory = '.';
     config.segment_length = 20*60;% in seconds
+    config.filter_low_edge = 1; %  lower edge of the frequency pass band 
+    config.filter_high_edge = 50; %  higher edge of the frequency pass band 
+    
     config.spectogram_window_size = 5; % in seconds
-    config.spectogram_max_frequency = 60;
     config.spectogram_band_size = 10;
     
     config.correlation_window_size = 30;
