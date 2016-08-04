@@ -15,7 +15,7 @@ function EEG_ISC_run(config)
     
     alldata = config_param('data');
         
-	%step1 band pass filter <1Hz and > 50Hz
+	%step1 band pass filter.
 	alldata = cachefun(@() do_filter(alldata), 'step1_dofilter');
     
 	%set data length as minimial length of EEG data from all people

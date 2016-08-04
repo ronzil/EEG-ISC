@@ -2,6 +2,11 @@
 function config = EEG_ISC_defaults() 
     config = struct;
 
+    %needs to be manually defined
+    %config.run_name = 'testgogo';
+    %config.data = alldata_rep;
+    %config.data_channels = [1:16];    
+    
     config.cache_base_directory = '.';
     config.segment_length = 20*60;% in seconds
     config.filter_low_edge = 1; %  lower edge of the frequency pass band 
