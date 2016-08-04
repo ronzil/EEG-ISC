@@ -1,34 +1,26 @@
 %%% EEG analysis
 
-function EEG_ISC_run(config)
-    assert(isfield(config, 'data'), 'Must provide data in the form a cell array of EEGLAB''s EEG objects');
-    assert(isfield(config, 'run_name'), 'Must provide run_name string.');
-    
+function EEG_ISC_run(config)    
 	% store the config object
     global config__global__;
     config__global__ = config;
 	
+    % verify the configuration and data is as expected
+    verify_config();
+    
     % store the config's hash for the cache
     calc_hash_config();
     
     cache_log(['Starting EEG ISC calculation. Using the following configuration: ', tostring(config)]);
     
-    alldata = config_param('data');
-        
+    alldata = config_param('data');            
+	srate = alldata{1}.srate; %asserted to be all equal
+	datalength = alldata{1}.pnts; %asserted to be all equal
+
 	%step1 band pass filter.
 	alldata = cachefun(@() do_filter(alldata), 'step1_dofilter');
     
-	%set data length as minimial length of EEG data from all people
-	datalength = intmax;
-	for i = 1:length(alldata)
-		EEG = alldata{i};
-		datalength = min(datalength, EEG.pnts);
-	end
-	
-	%get sample rate
-	srate = alldata{1}.srate;
-	
-
+   
     CorrSpectoTimeBands = [];
 %    CorrSpectoTimeBands_oneremoved = [];
 	RandCorrSpectoTimeBands = [];
@@ -61,7 +53,7 @@ function EEG_ISC_run(config)
 		for i = 1:length(alldatatrim)
 			numComponents = min(numComponents, size(componentsPerPerson{i},1));
 		end
-		numComponents
+%		numComponents
 		
 		%spectogramsPerPerson is a cell array per person. Each cell is: Cell array of components. Each cell is: bands X data (in seconds)
 		% spectogramsPerPerson{person_number}{component_number}{band_number, data}
@@ -101,7 +93,7 @@ function EEG_ISC_run(config)
 	cache_save(CorrSpectoTimeBands, 'step6_CorrSpectoTimeBands');
 %	cache_save(CorrSpectoTimeBands_oneremoved, 'step6a_CorrSpectoTimeBands_oneremoved');	
 	cache_save(RandCorrSpectoTimeBands, 'step7_RandCorrSpectoTimeBands');
-	cache_save(corrSig, 'step8_SignificanceVec_accumilated');
+	cache_save(corrSig, 'step8_SignificanceVec_accumulated');
 				        
 	segBand = cachefun(@() calc_significance(CorrSpectoTimeBands, RandCorrSpectoTimeBands), 'step8a_SignificanceVec_all');
 
@@ -162,7 +154,7 @@ end
 		
 
 function spectogramsBandsPerPerson = addAverageWindow(spectogramsBandsPerPerson, componentsPerPerson, numComponents)
-	data_length = length(componentsPerPerson{1}); %in sample. note add assert that all components are same length
+	data_length = length(componentsPerPerson{1}); %in samples.
     window = config_param('spectogram_window_size'); % 5 seconds
 	data = config_param('data');
     srate = data{1}.srate;
@@ -200,7 +192,7 @@ function spectogramsPerPerson = get_spectograms(componentsPerPerson, numcomponen
 	%spectogramsPerPerson is a cell array per person. Each cell is: Cell array of components. Each cell is: bands X data (in seconds)
 	% spectogramsPerPerson{i}{compind}[second, frequency]
 
-	data_length = length(componentsPerPerson{1}); %in sample. note add assert that all components are same length
+	data_length = length(componentsPerPerson{1}); %in samples.
     window = config_param('spectogram_window_size'); % 5 seconds
 	data = config_param('data');
     srate = data{1}.srate;
@@ -524,6 +516,21 @@ function res = config_param(name)
     
     assert(false, ['Configuration parameter not defined: ', name]);
     
+end
+
+% verify the configuration and data is as expected
+function verify_config()
+    % existance asserted in getter function
+    alldata = config_param('data');
+    config_param('run_name');
+    config_param('data_channels');
+  
+    srate = alldata{1}.srate;
+    datalength = alldata{1}.pnts;
+    for i = 1:length(alldata)
+        assert(alldata{i}.srate == srate, 'srate mismatch');
+        assert(alldata{i}.pnts == datalength, 'data length mismatch');
+    end
 end
 
 % calculate a hash of the current config struct. Including the data file
