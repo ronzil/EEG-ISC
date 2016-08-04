@@ -1,6 +1,5 @@
-%%% EEG analysis
-
-function EEG_ISC_run(config)    
+%% EEG analysis
+function results = EEG_ISC_run(config)    
 	% store the config object
     global config__global__;
     config__global__ = config;
@@ -83,20 +82,38 @@ function EEG_ISC_run(config)
         RandCorrSpectoTimeBands = cat(3, RandCorrSpectoTimeBands, randbandcorrMulti);
 
 		% calculate the significance for each band	        
-		segBand = cachefun(@() calc_significance(realbandcorr, randbandcorrMulti), 'step8_SignificanceVec', start);
+		sigBand = cachefun(@() calc_significance(realbandcorr, randbandcorrMulti), 'step8_SignificanceVec', start);
 		
-		corrSig = [corrSig; segBand(1,:)];
-		
+		corrSig = [corrSig; sigBand(1,:)];
+		break;
     end	
-		
-    % save correltion for entire time span.
+
+    % calculate the significance for each band for the entire span
+    sigBandAll = cachefun(@() calc_significance(CorrSpectoTimeBands, RandCorrSpectoTimeBands), 'step8a_SignificanceVec_all');
+    
+    % save calculations for entire time span.
 	cache_save(CorrSpectoTimeBands, 'step6_CorrSpectoTimeBands');
 %	cache_save(CorrSpectoTimeBands_oneremoved, 'step6a_CorrSpectoTimeBands_oneremoved');	
 	cache_save(RandCorrSpectoTimeBands, 'step7_RandCorrSpectoTimeBands');
 	cache_save(corrSig, 'step8_SignificanceVec_accumulated');
 				        
-	segBand = cachefun(@() calc_significance(CorrSpectoTimeBands, RandCorrSpectoTimeBands), 'step8a_SignificanceVec_all');
-
+    % make band labels.
+    band_labels = {};
+    bandsize = config_param('spectogram_band_size');    
+    frequencies = size(spectogramsPerPerson{1}{1},1);
+    %this for loop recreates the loop in make_bands() which is a bit ugly
+    for i=1:bandsize:frequencies-bandsize+1
+        band_labels = [band_labels; sprintf('%dhz-%dhz', i, i+bandsize-1)];
+    end	
+    % add the 'Raw' label to the end just like addAverageWindow()
+    band_labels = [band_labels; 'Raw'];
+    
+    % Create results object
+    results = {};
+    results.band_labels = band_labels;
+    results.correlations_per_band = CorrSpectoTimeBands;
+    results.significance_per_band = sigBandAll';
+    
 end
 
 
@@ -235,8 +252,9 @@ end
 function spectogramsBandsPerPerson = make_bands(spectogramsPerPerson, numComponents)
 	%spectogramsBandsPerPerson{i}{compind}[second, band]
 	
-	spectogramsBandsPerPerson = {};
-	
+    bandsize = config_param('spectogram_band_size');    
+    
+	spectogramsBandsPerPerson = {};	
 	for individual = 1:length(spectogramsPerPerson) % going over people
 		spectogramsBandsPerPerson{individual} = {};
 		
@@ -248,14 +266,14 @@ function spectogramsBandsPerPerson = make_bands(spectogramsPerPerson, numCompone
 			bandsdata = [];
 
 			% make bands			
-			bandsize = config_param('spectogram_band_size');
 			for i=1:bandsize:size(data,1)-bandsize+1
 				bandsdata = [bandsdata ; mean(data(i:i+bandsize-1, :))];
 			end	
 			
 			spectogramsBandsPerPerson{individual}{compind} = bandsdata;
 		end
-	end
+    end
+    
 end
 
 function allBandsCorr_one_removed = calc_correlations_one_removed(spectogramsBandsPerPerson, segment_length)
@@ -518,6 +536,14 @@ function res = config_param(name)
     assert(false, ['Configuration parameter not defined: ', name]);
     
 end
+
+% set a config parameter
+function config_param_set(name, value) 
+	global config__global__;
+    config__global__.(name) = value;
+
+end
+
 
 % verify the configuration and data is as expected
 function verify_config()
