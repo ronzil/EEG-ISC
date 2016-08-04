@@ -11,8 +11,8 @@ function EEG_ISC_run(config)
     % store the config's hash for the cache
     calc_hash_config();
     
-    cache_log('Starting...');
-
+    cache_log(['Starting EEG ISC calculation. Using the following configuration: ', tostring(config)]);
+    
     alldata = config_param('data');
         
 	%step1 filter <1Hz and > 50Hz and subtract reference from #17
