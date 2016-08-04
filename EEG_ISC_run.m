@@ -132,10 +132,11 @@ end
 
 
 function alldata = do_ica(alldata)
+    data_channels = config_param('data_channels');
 	parfor i = 1:length(alldata)
 		EEG = alldata{i};
 		
-		EEG = pop_runica(EEG, 'extended',1,'interupt','on', 'chanind', config_param('data_channels'));
+		EEG = pop_runica(EEG, 'extended',1,'interupt','on', 'chanind', data_channels);
 		EEG = eeg_checkset( EEG ); 
 		
 		alldata{i} = EEG;
