@@ -29,13 +29,13 @@ for i = 1:length(EEGcell)
 
     b = eeg_getbounds(EEGcell{i}); 
     if (length(b) > 1)
-        disp([EEGcell{i}.setname, ': Problem with data. Non continious stream.']);
+        disp([EEGcell{i}.filename, ': Problem with data. Non continious stream.']);
         if (strcmp(fixMode, 'TRIM'))
-            disp('Remove all but the longest segment.'); 
+            disp('Keeping only the longest segment.'); 
             %Keep only the longest continious segment.
             EEGcell{i} = eeg_keeplongestsegment(EEGcell{i});
         elseif (strcmp(fixMode, 'REMOVE'))
-            disp('Removing EEG data from cell array');
+            disp('Removing entire EEG from array.');
             keep = setdiff(keep, i);
         else
             ok = false;

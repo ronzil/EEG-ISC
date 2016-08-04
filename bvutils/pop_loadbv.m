@@ -87,7 +87,9 @@ try
     EEG = eeg_emptyset;
 catch
 end
+EEG.filename = hdr.commoninfos.datafile;
 EEG.comments = ['Original file: ' hdr.commoninfos.datafile];
+
 hdr.commoninfos.numberofchannels = str2double(hdr.commoninfos.numberofchannels);
 EEG.srate = 1000000 / str2double(hdr.commoninfos.samplinginterval);
 

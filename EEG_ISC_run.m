@@ -12,7 +12,7 @@ function EEG_ISC_run(config)
     calc_hash_config();
     
     cache_log('Starting...');
-    
+
     alldata = config_param('data');
         
 	%step1 filter <1Hz and > 50Hz and subtract reference from #17
@@ -541,7 +541,7 @@ function calc_hash_config()
 
     % add the names of the data files to the hashed data
     t = config__global__;
-    t.names = strjoin(cellfun(@(EEG) EEG.setname, t.data, 'UniformOutput', false));
+    t.names = strjoin(cellfun(@(EEG) EEG.filename, t.data, 'UniformOutput', false));
     
     config__global__.config_hash = string2hash(tostring(t));
 end
