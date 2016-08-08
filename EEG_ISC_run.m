@@ -33,7 +33,7 @@ function results = EEG_ISC_run(config)
     
 	% iterate all data in segments
 	set_segment_length = config_param('segment_length')*srate;
-	for start = 1:set_segment_length:datalength
+    for start = 1:set_segment_length:datalength
 	
         %spectorgrams and correlations require a window of data from the
         %moment we are trying to calculate. Therefore we need extra data to calculate the last second.
@@ -41,7 +41,6 @@ function results = EEG_ISC_run(config)
         extra_length = srate*(10+max([config_param('spectogram_window_size'), config_param('correlation_window_size')]));
                
 		segment_length = min(set_segment_length, datalength-start+1-extra_length-1);
-        internal_segment_length = segment_length + extra_length; 
 	
         time_labels{end+1} = sprintf('MIN%dto%d',round(start/srate/60), round((start+segment_length)/srate/60));
         
@@ -180,7 +179,7 @@ function componentsPerPerson = get_components(alldata)
 		componentsPerPerson = {};	
 		for i = 1:length(alldata)
 		    EEG = alldata{i};
-			componentsPerPerson{i} = eeg_getdatact(EEG, 'component', [1:size(EEG.icaweights,1)]);
+			componentsPerPerson{i} = eeg_getdatact(EEG, 'component', 1:size(EEG.icaweights,1));
 	%		componentsPerPerson{i} = EEG.data(1:16,:);
 		end
 end		
@@ -268,7 +267,7 @@ function spectogramsBandsPerPerson = make_bands(spectogramsPerPerson, numCompone
     bandsize = config_param('spectogram_band_size');    
     
 	spectogramsBandsPerPerson = {};	
-	for individual = 1:length(spectogramsPerPerson) % going over people
+    for individual = 1:length(spectogramsPerPerson) % going over people
 		spectogramsBandsPerPerson{individual} = {};
 		
 		for compind = 1:numComponents % going over components
@@ -284,7 +283,7 @@ function spectogramsBandsPerPerson = make_bands(spectogramsPerPerson, numCompone
 			end	
 			
 			spectogramsBandsPerPerson{individual}{compind} = bandsdata;
-		end
+        end
     end
     
 end
@@ -323,7 +322,6 @@ end
 
 function allBandsCorrMulti = calc_rand_correlations(spectogramsBandsPerPerson, segment_length)
 	peoplenum = length(spectogramsBandsPerPerson);
-	datalength = size(spectogramsBandsPerPerson{1}{1},2);
 
     window = config_param('correlation_window_size'); % 30 seconds
     calclength = config_param('correlation_random_length');
@@ -335,7 +333,7 @@ function allBandsCorrMulti = calc_rand_correlations(spectogramsBandsPerPerson, s
 	
 	randnum = config_param('correlation_random_iterations');
 	allBandsCorrMulti=[];
-	parfor i=1:randnum
+    parfor i=1:randnum
 		% all start at begining
 		startingTimePerPerson = mindist + randi(round(segment_length-calclength-mindist), 1,peoplenum);
         	
@@ -361,7 +359,7 @@ function allBandsCorr = do_calc_correlations(spectogramsBandsPerPerson, starting
         % build component matrix
         compmat = [];
         for personi = 1:peoplenum
-    		for compi = 1:componentnum
+            for compi = 1:componentnum
     			starttimei = startingTimePerPerson(personi);				
         		compmat = [compmat spectogramsBandsPerPerson{personi}{compi}(bandi, starttimei:starttimei+datalength+window-1)'];
             end
@@ -426,7 +424,7 @@ function allBandsCorr = slow_calc_correlations(spectogramsBandsPerPerson, starti
 		% calc the corr
 		corrtimevec = [];
 		for windowstart=1:calclength-window
-			disp(sprintf('band %d windowstart %d', bandi, windowstart));
+			fprintf('band %d windowstart %d', bandi, windowstart);
 			% go over all pairs of people
 			% calc AVERAGE max correlation
 			avgvalue = 0;
@@ -606,7 +604,7 @@ function cache_dir = cache_get_directory()
     cache_dir = fullfile(config_param('cache_base_directory'), 'cache', [config_param('run_name'), '_', config_param('config_hash')]);
         
     % create it if it doesn't exist
-	if (~exist(cache_dir, 'dir'))
+    if (~exist(cache_dir, 'dir'))
         mkdir(cache_dir);
     end        
 end
