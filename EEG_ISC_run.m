@@ -454,15 +454,16 @@ end
 
 
 
-function segBand = calc_significance(realbandcorr, randbandcorrMulti)
+function sigBand = calc_significance(realbandcorr, randbandcorrMulti)
 	%realbandcorr is a matrix of bands,time
-	%randbandcorrMulti is matrix of bands,time,interations
+	%randbandcorrMulti is matrix of bands,time,iterations
 
     realval = mean(realbandcorr, 2)';
-    randdist = mean(randbandcorrMulti, 3)';
+    randdist = squeeze(mean(randbandcorrMulti, 2))';
     
-    segBand = (realval - mean(randdist))./std(randdist);
+    sigBand = (realval - mean(randdist))./std(randdist);
 
+    sigBand = sigBand';
 end
 
 %-----------------------------------------------------------------------------
