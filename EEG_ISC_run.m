@@ -327,18 +327,21 @@ function allBandsCorrMulti = calc_rand_correlations(spectogramsBandsPerPerson, s
 
     window = config_param('correlation_window_size'); % 30 seconds
     calclength = config_param('correlation_random_length');
+    % Just to be safe. Mininal distance so we won't accidently choose a small
+    % distance and get an erroneous result.    
+    % I don't feel this needs to be a parameter as it we just be confusing and
+    % not make much of a difference anyway
+    mindist = 10; 
 	
 	randnum = config_param('correlation_random_iterations');
 	allBandsCorrMulti=[];
-	for i=1:randnum
-		i	
+	parfor i=1:randnum
 		% all start at begining
-		startingTimePerPerson = randi(round(segment_length-calclength), 1,peoplenum);
-	
+		startingTimePerPerson = mindist + randi(round(segment_length-calclength-mindist), 1,peoplenum);
+        	
 		allBandsCorr = do_calc_correlations(spectogramsBandsPerPerson, startingTimePerPerson, calclength, window);
 		allBandsCorrMulti(:,:,i) = allBandsCorr;
-	end
-	
+    end
 		
 end
 
