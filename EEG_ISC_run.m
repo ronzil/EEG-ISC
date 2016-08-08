@@ -6,11 +6,14 @@ function results = EEG_ISC_run(config)
 	
     % verify the configuration and data is as expected
     verify_config();
-    
-    % store the config's hash for the cache
+
+    % config hash is used as cache key. 
     calc_hash_config();
-    
-    cache_log(['Starting EEG ISC calculation. Using the following configuration: ', tostring(config)]);
+        
+    % output config
+    cache_log(['Starting EEG ISC calculation. Using the following configuration\n ', tostring(config)]);
+    cache_log(['Data files: ', get_file_names()]);
+    cache_log(['Cache directory: ', full_path_dir(cache_get_directory())]);    
     
     alldata = config_param('data');            
 	srate = alldata{1}.srate; %verified to be all equal
@@ -553,11 +556,16 @@ end
 function calc_hash_config()
     global config__global__;
 
+    str = tostring(config__global__);
     % add the names of the data files to the hashed data
-    t = config__global__;
-    t.names = strjoin(cellfun(@(EEG) EEG.filename, t.data, 'UniformOutput', false));
-    
-    config__global__.config_hash = string2hash(tostring(t));
+    str = [str, get_file_names()];
+    config__global__.config_hash = string2hash(str);
+end
+
+function names = get_file_names() 
+    names =  strjoin(cellfun(@(EEG) EEG.filename, config_param('data'), 'UniformOutput', false));
+    names = sort(cellstr(names));
+    names = strjoin(names);
 end
 
 % Cache wrapper for function call. If the given key exists in the cache,
@@ -588,23 +596,35 @@ function result = cachefun(func, key, varargin)
 		end
 end
 
+
+% get the full path to the cache directory
+function cache_dir = cache_get_directory()
+	% cache dir contains the run_name and the hash or the parameters.
+    cache_dir = fullfile(config_param('cache_base_directory'), 'cache', [config_param('run_name'), '_', config_param('config_hash')]);
+        
+    % create it if it doesn't exist
+	if (~exist(cache_dir, 'dir'))
+        mkdir(cache_dir);
+    end        
+end
+
+function fulldir = full_path_dir(dir)
+    %convert to full path. Only way in Matlab...
+    oldpath = pwd;
+    cd(dir);
+    fulldir = pwd;
+    cd(oldpath)    
+end
+
 % get the full path to the file in the cache directory for the given file
 % name
-function fname = cache_get_filename(key)
-	% cache dir contains the run_name and the hash or the parameters.
-    cache_dir__ = fullfile(config_param('cache_base_directory'), 'cache', [config_param('run_name'), '_', config_param('config_hash')]);
-    
-    % create it if it doesn't exist
-	if (~exist(cache_dir__, 'dir'))
-        mkdir(cache_dir__);
-    end    
-	
+function fname = cache_get_filename(filename)
     % add a .mat extension if there is none
-    if (isempty(strfind(key, '.')))
-        key = [key, '.mat'];
+    if (isempty(strfind(filename, '.')))
+        filename = [filename, '.mat'];
     end
     
-	fname = fullfile(cache_dir__, key);
+	fname = fullfile(cache_get_directory(), filename);
 end
 
 % save given result in cache under given name.
