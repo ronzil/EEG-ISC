@@ -25,6 +25,9 @@ function results = EEG_ISC_run(config)
 	RandCorrSpectoTimeBands = [];
 	corrSig = [];
     
+    %time labels
+    time_labels = {};
+    
 	% iterate all data in segments
 	set_segment_length = config_param('segment_length')*srate;
 	for start = 1:set_segment_length:datalength
@@ -37,6 +40,9 @@ function results = EEG_ISC_run(config)
 		segment_length = min(set_segment_length, datalength-start+1-extra_length-1);
         internal_segment_length = segment_length + extra_length; 
 	
+        time_labels{end+1} = sprintf('MIN%dto%d',round(start/srate/60), round((start+segment_length)/srate/60));
+        
+        
 		%trim EEG to segment length each time	
 		alldatatrim = do_trim(alldata, start, start+internal_segment_length-1);
 		
@@ -79,18 +85,20 @@ function results = EEG_ISC_run(config)
 		randbandcorrMulti = cachefun(@() calc_rand_correlations(spectogramsBandsPerPerson, segment_length/srate), 'step7_RandCorrSpectoTimeBands_really_100_', start);
 		
         % accumulate all rand correlations.
+        % we treat the new data as more random runs, hence cat(3)
         RandCorrSpectoTimeBands = cat(3, RandCorrSpectoTimeBands, randbandcorrMulti);
 
 		% calculate the significance for each band	        
 		sigBand = cachefun(@() calc_significance(realbandcorr, randbandcorrMulti), 'step8_SignificanceVec', start);
 		
 		corrSig = [corrSig, sigBand];
-		
     end	
 
     % calculate the significance for each band for the entire span
     sigBandAll = cachefun(@() calc_significance(CorrSpectoTimeBands, RandCorrSpectoTimeBands), 'step8_SignificanceVec');
-    
+    corrSig = [corrSig, sigBandAll];
+    time_labels{end+1} = 'Entire';
+
     % save calculations for entire time span.
 	cache_save(CorrSpectoTimeBands, 'step6_CorrSpectoTimeBands');
 %	cache_save(CorrSpectoTimeBands_oneremoved, 'step6a_CorrSpectoTimeBands_oneremoved');	
@@ -108,11 +116,15 @@ function results = EEG_ISC_run(config)
     % add the 'Raw' label to the end just like addAverageWindow()
     band_labels = [band_labels; 'Raw'];
     
+    significance = array2table(corrSig, 'VariableNames', time_labels, 'RowNames', band_labels);
+    
+    
     % Create results object
     results = {};
     results.band_labels = band_labels;
     results.correlations_per_band = CorrSpectoTimeBands;
     results.significance_per_band = sigBandAll';
+    results.significance = significance;
     
 end
 
