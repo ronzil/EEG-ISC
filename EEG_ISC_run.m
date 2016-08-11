@@ -562,6 +562,11 @@ end
 % names
 function calc_hash_config()
     global config__global__;
+    
+    % allow manual override of hash
+    if (isfield(config__global__, 'config_hash')) 
+        return
+    end
 
     str = tostring(config__global__);
     % add the names of the data files to the hashed data
