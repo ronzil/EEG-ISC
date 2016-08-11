@@ -11,9 +11,11 @@ function results = EEG_ISC_run(config)
     calc_hash_config();
         
     % output config
-    cache_log(['Starting EEG ISC calculation. Using the following configuration\n ', tostring(config)]);
+    cache_log('Starting EEG ISC calculation using the following configuration:');
+    cache_log(tostring(config));
     cache_log(['Data files: ', get_file_names()]);
     cache_log(['Cache directory: ', full_path_dir(cache_get_directory())]);    
+    cache_log('');
     
     alldata = config_param('data');            
 	srate = alldata{1}.srate; %verified to be all equal
@@ -34,6 +36,8 @@ function results = EEG_ISC_run(config)
 	% iterate all data in segments
 	set_segment_length = config_param('segment_length')*srate;
     for start = 1:set_segment_length:datalength	
+        fprintf('Starting segment %d of %d...\n', 1+(start-1)/set_segment_length, floor(datalength/set_segment_length));
+        
         %spectorgrams and correlations require a window of data from the
         %moment we are trying to calculate. Therefore we need extra data to calculate the last second.
         %some padding to be on the safe side
@@ -156,10 +160,11 @@ end
 function alldata = do_trim(alldata, start_sample, end_sample)
 	for i = 1:length(alldata)
 		EEG = alldata{i};
-		
-		EEG = eeg_eegrej( EEG, [end_sample+1, EEG.pnts] );
-		EEG = eeg_eegrej( EEG, [1, start_sample-1] );
-		
+        % wrapped in evalc to suppress uncontrolled output
+		evalc([...
+		'EEG = eeg_eegrej( EEG, [end_sample+1, EEG.pnts] );',...
+		'EEG = eeg_eegrej( EEG, [1, start_sample-1] );...'...
+		]);
 		alldata{i} = EEG;
 	end
 
@@ -172,7 +177,7 @@ function alldata = do_ica(alldata)
 	parfor i = 1:length(alldata)
 		EEG = alldata{i};
 		
-		EEG = pop_runica(EEG, 'extended',1,'interupt','on', 'chanind', data_channels);
+		EEG = pop_runica(EEG, 'extended',1,'interupt','off', 'verbose','off', 'chanind', data_channels);
 		EEG = eeg_checkset( EEG ); 
 		
 		alldata{i} = EEG;
@@ -329,6 +334,8 @@ function allBandsCorr = calc_correlations(spectogramsBandsPerPerson, segment_len
 	allBandsCorr = do_calc_correlations(spectogramsBandsPerPerson, startingTimePerPerson, calclength, window);
 end
 
+% calculate correlations with each dataset at a random starting point. 
+% used to evaulate actual correlation.
 function allBandsCorrMulti = calc_rand_correlations(spectogramsBandsPerPerson, segment_length)
 	peoplenum = length(spectogramsBandsPerPerson);
 	data = config_param('data');
