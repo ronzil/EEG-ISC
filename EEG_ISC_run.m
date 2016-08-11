@@ -81,7 +81,7 @@ function results = EEG_ISC_run(config)
         CorrSpectoTimeBands = [CorrSpectoTimeBands, realbandcorr];
 
 		% calculate the random correlation of each band
-		randbandcorrMulti = cachefun(@() calc_rand_correlations(spectogramsBandsPerPerson, segment_length), 'step7_RandCorrSpectoTimeBands_really_100_', start);
+		randbandcorrMulti = cachefun(@() calc_rand_correlations(spectogramsBandsPerPerson, segment_length), 'step7_RandCorrSpectoTimeBands_', start);
 		
         % accumulate all rand correlations.
         % we treat the new data as more random runs, hence cat(3)
