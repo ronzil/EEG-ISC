@@ -42,6 +42,7 @@ function results = EEG_ISC_run(config)
                
 		segment_length = min(set_segment_length, datalength-start+1-extra_length-1);
 	
+        internal_segment_length = segment_length + extra_length;        
         time_labels{end+1} = sprintf('MIN%dto%d',round(start/srate/60), round((start+segment_length)/srate/60));
         
         
