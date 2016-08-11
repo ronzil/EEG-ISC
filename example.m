@@ -7,8 +7,8 @@ alldata_dem = pop_loadbvdir('C:\bigdata\debates\dem');
 % start and end.
 alldata_dem = eeg_multi_align(alldata_dem, 60, 60);
 
-% setup the algorithm configuration
-config = EEG_ISC_defaults();
+% setup the algorithm configuration. 
+config = EEG_ISC_defaults(); % See this function for details on the various options.
 config.run_name = 'dem_run';
 config.data = alldata_dem;
 config.data_channels = 1:16;
