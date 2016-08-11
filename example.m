@@ -14,9 +14,9 @@ alldata_dem = eeg_multi_align(alldata_dem, 60*5, 60*1);
 
 % setup the algorithm configuration
 config = EEG_ISC_defaults();
-config.run_name = 'go15dem';
+config.run_name = 'go14dem';
 config.data = alldata_dem;
-config.data_channels = [1:16];
+config.data_channels = 1:16;
 config.ref_channel = 17;
 
 % run the algorithm

@@ -128,7 +128,6 @@ function results = EEG_ISC_run(config)
     results = {};
     results.band_labels = band_labels;
     results.correlations_per_band = CorrSpectoTimeBands;
-    results.significance_per_band = sigBandAll';
     results.significance = significance;
     
 end
@@ -323,7 +322,7 @@ function allBandsCorr = calc_correlations(spectogramsBandsPerPerson, segment_len
     
     segment_length_s = floor(segment_length/srate);
     
-    window = config_param('correlation_window_size'); % 30 seconds
+    window = config_param('correlation_window_size'); % in seconds
     assert (segment_length_s + window <= datalength);
     
 	calclength = segment_length_s;
@@ -428,64 +427,64 @@ function allBandsCorr = do_calc_correlations(spectogramsBandsPerPerson, starting
 end	
 
 
-	
-function allBandsCorr = slow_calc_correlations(spectogramsBandsPerPerson, startingTimePerPerson, calclength, window)
-
-	peoplenum = length(spectogramsBandsPerPerson);
-	componentnum = length(spectogramsBandsPerPerson{1});
-	bandsnum = size(spectogramsBandsPerPerson{1}{1},1);
-
-	% go over bands
-	% calc the corr for the entire time per band
-	allBandsCorr = [];
-	for bandi = 1:bandsnum
-		% go over time looking at a window
-		% calc the corr
-		corrtimevec = [];
-		for windowstart=1:calclength-window
-			fprintf('band %d windowstart %d', bandi, windowstart);
-			% go over all pairs of people
-			% calc AVERAGE max correlation
-			avgvalue = 0;
-				for personi = 1:peoplenum-1
-					for personj = personi+1:peoplenum
-						% go over all pairs of componentsPerPerson. 
-						% calc the MAX correlation
-						maxcorr = -1;
-						for compi = 1:componentnum
-							for compj = 1:componentnum
-								% get correlation between the bands here
-								starttimei = startingTimePerPerson(personi)-1+windowstart;
-								starttimej = startingTimePerPerson(personj)-1+windowstart;
-								
-								% get data windows
-								datai = spectogramsBandsPerPerson{personi}{compi}(bandi, starttimei:starttimei+window-1);
-								dataj = spectogramsBandsPerPerson{personj}{compj}(bandi, starttimej:starttimej+window-1);
-								% get correlation
-								val = corr(datai', dataj');
-								% save the max value			
-								maxcorr = max(maxcorr, val);
-							end
-						end
-						% sum up to calculate the average
-						avgvalue = avgvalue + maxcorr;
-					end
-				end
-			
-			% devide to get the average
-			avgvalue = avgvalue / (peoplenum*(peoplenum-1)/2); % go from sum to average
-		
-			corrtimevec = [corrtimevec, avgvalue]; % create the time series
-		end
-		
-		allBandsCorr = [allBandsCorr; corrtimevec]; % stack the bands time series
-
-	end	
-
-		
-	
-
-end
+%% Slow but more clear implementation. Left for calarity of functionality.	
+% function allBandsCorr = slow_calc_correlations(spectogramsBandsPerPerson, startingTimePerPerson, calclength, window)
+% 
+% 	peoplenum = length(spectogramsBandsPerPerson);
+% 	componentnum = length(spectogramsBandsPerPerson{1});
+% 	bandsnum = size(spectogramsBandsPerPerson{1}{1},1);
+% 
+% 	% go over bands
+% 	% calc the corr for the entire time per band
+% 	allBandsCorr = [];
+% 	for bandi = 1:bandsnum
+% 		% go over time looking at a window
+% 		% calc the corr
+% 		corrtimevec = [];
+% 		for windowstart=1:calclength-window
+% 			fprintf('band %d windowstart %d', bandi, windowstart);
+% 			% go over all pairs of people
+% 			% calc AVERAGE max correlation
+% 			avgvalue = 0;
+% 				for personi = 1:peoplenum-1
+% 					for personj = personi+1:peoplenum
+% 						% go over all pairs of componentsPerPerson. 
+% 						% calc the MAX correlation
+% 						maxcorr = -1;
+% 						for compi = 1:componentnum
+% 							for compj = 1:componentnum
+% 								% get correlation between the bands here
+% 								starttimei = startingTimePerPerson(personi)-1+windowstart;
+% 								starttimej = startingTimePerPerson(personj)-1+windowstart;
+% 								
+% 								% get data windows
+% 								datai = spectogramsBandsPerPerson{personi}{compi}(bandi, starttimei:starttimei+window-1);
+% 								dataj = spectogramsBandsPerPerson{personj}{compj}(bandi, starttimej:starttimej+window-1);
+% 								% get correlation
+% 								val = corr(datai', dataj');
+% 								% save the max value			
+% 								maxcorr = max(maxcorr, val);
+% 							end
+% 						end
+% 						% sum up to calculate the average
+% 						avgvalue = avgvalue + maxcorr;
+% 					end
+% 				end
+% 			
+% 			% devide to get the average
+% 			avgvalue = avgvalue / (peoplenum*(peoplenum-1)/2); % go from sum to average
+% 		
+% 			corrtimevec = [corrtimevec, avgvalue]; % create the time series
+% 		end
+% 		
+% 		allBandsCorr = [allBandsCorr; corrtimevec]; % stack the bands time series
+% 
+% 	end	
+% 
+% 		
+% 	
+% 
+% end
 
 
 

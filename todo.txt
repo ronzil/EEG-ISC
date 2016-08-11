@@ -1,0 +1,20 @@
+- 
+
+++- look into filter
+++ look into channel selecion 
+++ remove locations.loc
++++ create result struct
+++ assert they all have the same srate
+----- add parameters to: not do ICA, not do parfor
+
+
++ hash not good enough. tostring doesnt print filenames. maybe order changes etc
++ create a significance table for each time segment and the whole run, with proper labels for columns and rows.
++ is parfor on random outer loop faster? 
+----- remove cachefun for fast functions. is filter deterministric?
+
+- add CorrSpectoTimeBands_oneremoved ??
+- docs
+- upload to github (change history)
+- change bvutils func prefixes to bv
+- toc duration of save
