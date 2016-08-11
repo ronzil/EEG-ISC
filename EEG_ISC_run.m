@@ -134,20 +134,26 @@ end
 
 
 function alldata = do_filter(alldata)
-	for i = 1:length(alldata)
+    refc = config_param('ref_channel', true);
+    for i = 1:length(alldata)
 		EEG = alldata{i};
 		
 		EEG = pop_eegfiltnew(EEG, [], config_param('filter_low_edge'), [], true, [], 0); % high pass
+		EEG = eeg_checkset( EEG );
 		EEG = pop_eegfiltnew(EEG, [], config_param('filter_high_edge'), [], 0, [], 0);%% low pass
 		EEG = eeg_checkset( EEG );
-		
+
+        % get the reference channel and reref, if provided
+        if (~isempty(refc))
+            EEG = pop_reref( EEG, refc);
+            EEG = eeg_checkset( EEG );
+        end
+        
 		alldata{i} = EEG;
 
 	end    
 
 end
-
-
 
 function alldata = do_trim(alldata, start_sample, end_sample)
 	for i = 1:length(alldata)
@@ -389,9 +395,9 @@ function allBandsCorr = do_calc_correlations(spectogramsBandsPerPerson, starting
 					avgvalue = avgvalue + maxcorr;
 				end
 			end
-			
+ 
 			avgvalue = avgvalue / (peoplenum*(peoplenum-1)/2); % go from sum to average			
-
+			assert(~isnan(avgvalue), 'nan value. Might be because of no dereferencing of data before ICA');
             %% tryied these optimiztions that werent faster.
             %mb = max(im2col(corrmat3, [componentnum componentnum], 'distinct'));
             %mb(1:peoplenum+1:peoplenum^2) = [];
@@ -512,8 +518,8 @@ end
 
 % return the configuration parameter under name. 
 % if it doesn't exist, look at the default values.
-% abort if not found.
-function res = config_param(name) 
+% abort if not found, unless noAbort is set. 
+function res = config_param(name, noabort) 
 	global config__global__;
     if (isfield(config__global__, name))
         res = config__global__.(name);
@@ -525,9 +531,12 @@ function res = config_param(name)
         res = defaults.(name);
         return
     end
-    
-    assert(false, ['Configuration parameter not defined: ', name]);
-    
+
+    if (exist('noabort', 'var'))
+        res = [];
+    else
+        assert(false, ['Configuration parameter not defined: ', name]);
+    end
 end
 
 % set a config parameter
