@@ -26,7 +26,6 @@ function results = EEG_ISC_run(config)
     
    
     CorrSpectoTimeBands = [];
-%    CorrSpectoTimeBands_oneremoved = [];
 	RandCorrSpectoTimeBands = [];
 	corrSig = [];
     
@@ -76,15 +75,10 @@ function results = EEG_ISC_run(config)
 		spectogramsBandsPerPerson =  cachefun(@() addAverageWindow(spectogramsBandsPerPerson, componentsPerPerson, numComponents), 'step5a_averageWindow', start);
 
 		% calcluate the correlation of each band 	
-		realbandcorr = cachefun(@() calc_correlations(spectogramsBandsPerPerson, segment_length), 'step6_CorrSpectoTimeBands', start);
-
-%		fname = sprintf('step6a_CorrSpectoTimeBands_one_removed_%d_%d', start, internal_segment_length);								
-%		realbandcorr_oneremoved = cachefun(@() calc_correlations_one_removed(spectogramsBandsPerPerson, segment_length/srate), fname);
-		
+		realbandcorr = cachefun(@() calc_correlations(spectogramsBandsPerPerson, segment_length), 'step6_CorrSpectoTimeBands', start);		
         
         % accumilate all correlations.
         CorrSpectoTimeBands = [CorrSpectoTimeBands, realbandcorr];
-%		CorrSpectoTimeBands_oneremoved = cat(2, CorrSpectoTimeBands_oneremoved, realbandcorr_oneremoved);
 
 		% calculate the random correlation of each band
 		randbandcorrMulti = cachefun(@() calc_rand_correlations(spectogramsBandsPerPerson, segment_length), 'step7_RandCorrSpectoTimeBands_really_100_', start);
@@ -106,7 +100,6 @@ function results = EEG_ISC_run(config)
 
     % save calculations for entire time span.
 	cache_save(CorrSpectoTimeBands, 'step6_CorrSpectoTimeBands');
-%	cache_save(CorrSpectoTimeBands_oneremoved, 'step6a_CorrSpectoTimeBands_oneremoved');	
 	cache_save(RandCorrSpectoTimeBands, 'step7_RandCorrSpectoTimeBands');
 	cache_save(corrSig, 'step8a_SignificanceVec_accumulated_per_segment');
 				        
@@ -127,7 +120,7 @@ function results = EEG_ISC_run(config)
     % Create results object
     results = {};
     results.band_labels = band_labels;
-    results.correlations_per_band = CorrSpectoTimeBands;
+    results.correlations = CorrSpectoTimeBands;
     results.significance = significance;
     
 end
