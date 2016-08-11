@@ -36,7 +36,7 @@ function results = EEG_ISC_run(config)
 	% iterate all data in segments
 	set_segment_length = config_param('segment_length')*srate;
     for start = 1:set_segment_length:datalength	
-        fprintf('Starting segment %d of %d...\n', 1+(start-1)/set_segment_length, floor(datalength/set_segment_length));
+        fprintf('Starting segment %d of %d...\n', 1+(start-1)/set_segment_length, ceil(datalength/set_segment_length));
         
         %spectorgrams and correlations require a window of data from the
         %moment we are trying to calculate. Therefore we need extra data to calculate the last second.
