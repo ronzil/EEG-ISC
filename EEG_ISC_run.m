@@ -327,11 +327,18 @@ function allBandsCorrMulti = calc_rand_correlations(spectogramsBandsPerPerson, s
     % not make much of a difference anyway
     mindist = 10; 
 	
+    % the value to randomize to. Check it's valid
+    val = round(segment_length_s-calclength-mindist);
+    if (val <=0) % if not enough data, return with nothing
+        allBandsCorrMulti = [];
+        return
+    end
+    
 	randnum = config_param('correlation_random_iterations');
 	allBandsCorrMulti=[];
     parfor i=1:randnum
 		% all start at begining
-		startingTimePerPerson = mindist + randi(round(segment_length_s-calclength-mindist), 1,peoplenum);
+		startingTimePerPerson = mindist + randi(val, 1, peoplenum);
         	
 		allBandsCorr = do_calc_correlations(spectogramsBandsPerPerson, startingTimePerPerson, calclength, window);
 		allBandsCorrMulti(:,:,i) = allBandsCorr;
