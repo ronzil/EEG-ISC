@@ -48,7 +48,8 @@ function results = EEG_ISC_run(config)
         time_labels{end+1} = sprintf('MIN%dto%d',round(start/srate/60), round((start+segment_length)/srate/60));
         
         
-		%trim EEG to segment length each time	
+		%trim EEG to segment length each time
+        disp('Trimming data...');
 		alldatatrim = do_trim(alldata, start, start+internal_segment_length-1);
 		%calculate ica weights
 		alldatatrim = cachefun(@() do_ica(alldatatrim), 'step2_ica', start);
@@ -81,7 +82,7 @@ function results = EEG_ISC_run(config)
         CorrSpectoTimeBands = [CorrSpectoTimeBands, realbandcorr];
 
 		% calculate the random correlation of each band
-		randbandcorrMulti = cachefun(@() calc_rand_correlations(spectogramsBandsPerPerson, segment_length), 'step7_RandCorrSpectoTimeBands_', start);
+		randbandcorrMulti = cachefun(@() calc_rand_correlations(spectogramsBandsPerPerson, segment_length), 'step7_RandCorrSpectoTimeBands', start);
 		
         % accumulate all rand correlations.
         % we treat the new data as more random runs, hence cat(3)
@@ -289,22 +290,6 @@ function spectogramsBandsPerPerson = make_bands(spectogramsPerPerson, numCompone
     end
     
 end
-
-function allBandsCorr_one_removed = calc_correlations_one_removed(spectogramsBandsPerPerson, segment_length)
-% do calc for one person removed each time
-	allBandsCorr_one_removed = [];
-	peoplenum = length(spectogramsBandsPerPerson);	
-	for i=1:peoplenum
-		
-		partial = spectogramsBandsPerPerson(setdiff(1:peoplenum,i));
-		allBandsCorr = calc_correlations(partial, segment_length);
-
-		allBandsCorr_one_removed(:,:,i) = allBandsCorr;
-	end
-
-end
-
-
 
 function allBandsCorr = calc_correlations(spectogramsBandsPerPerson, segment_length)
 	%spectogramsBandsPerPerson{i}{compind}[second, band]
